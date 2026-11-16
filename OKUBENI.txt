@@ -1,0 +1,221 @@
+================================================================
+   MacarZeka  —  Müşteri Takip Programı
+   Windows 11 / Windows 10, 64 bit
+================================================================
+
+
+1) KURULUM
+----------
+a. Bu klasörün TAMAMINI bilgisayara kopyalayın.
+   Önerilen yer:   C:\MacarZeka
+   (Program Files içine KOYMAYIN; oraya yazma izni olmayabilir.)
+
+b. Klasörün içindeki   MacarZeka.exe   dosyasına çift tıklayın.
+   Program açılır, Microsoft Edge penceresi içinde çalışır.
+   (Edge Windows 11'de zaten kuruludur, ayrıca bir şey kurmanıza
+   gerek yoktur. Edge yoksa Chrome kullanılır.)
+
+c. Windows "Bilinmeyen yayımcı / Windows bilgisayarınızı korudu"
+   uyarısı verirse:
+        "Ek bilgi"  ->  "Yine de çalıştır"
+   Bu uyarı programın imza sertifikası olmadığı için çıkar.
+   Bir kez onayladıktan sonra tekrar sormaz.
+
+
+2) MASAÜSTÜ KISAYOLU VE İKON
+-----------------------------
+a. MacarZeka.exe üstüne sağ tık -> "Kısayol oluştur"
+b. Oluşan kısayolu masaüstüne taşıyın.
+c. İkonunu değiştirmek için:
+   Kısayola sağ tık -> Özellikler -> "Simge Değiştir..." ->
+   "Gözat..." -> bu klasördeki  icon.ico  dosyasını seçin -> Tamam.
+
+
+3) KAYITLAR NEREDE?
+-------------------
+Her şey programın bulunduğu klasörde durur:
+
+   veriler.json          <- bütün müşteriler, satışlar, ödemeler, notlar
+   ayarlar.json          <- Gemini anahtarı ve mikrofon seçimi
+                            (kimseyle paylaşmayın)
+   yedekler\             <- her gün otomatik alınan kopyalar (son 60 gün)
+   .pencere-ayarlari\    <- pencere ayarları (silinebilir, önemsiz)
+   oturum.port           <- program açıkken oluşur, kapanınca silinir
+
+Gemini kapalıyken hiçbir bilgi internete gönderilmez.
+
+
+4) GÜNCELLEME
+-------------
+Program açılışta yeni sürüm olup olmadığına kendisi bakar.
+
+Yeni sürüm varsa Panel ekranının üstünde yeşil bir şerit çıkar:
+   "Yeni sürüm çıktı: 1.4"   ->   [Şimdi güncelle]
+
+"Şimdi güncelle" dediğinizde program yeni sürümü indirir, kendini
+değiştirir, kapanır ve yeni sürümle açılır. Toplam birkaç saniye sürer.
+
+GÜVENDE OLAN ŞEYLER:
+   * veriler.json, ayarlar.json ve yedekler\ klasörüne DOKUNULMAZ.
+   * Güncellemeden hemen önce kayıtların ayrı bir kopyası alınır
+     (yedekler\veriler-guncelleme-oncesi-... .json).
+   * Bir aksilik olursa eski sürüm geri yüklenir, program çalışmaya
+     devam eder.
+
+Elle güncelleme yapacaksanız: sadece MacarZeka.exe dosyasını
+değiştirin, diğer dosyalara dokunmayın.
+
+Güncellemeyi hiç istemiyorsanız şeritteki "Sonra" düğmesine basın;
+program sizi bir daha o açılışta rahatsız etmez.
+
+
+5) YEDEKLEME
+------------
+Program her gün otomatik yedek alır; ama bu yedekler aynı
+bilgisayarda durur. Bilgisayar bozulursa onlar da gider.
+
+Ayda bir kez:
+   Sol alttaki "Yedek al" butonuna basın, inen dosyayı
+   flaş belleğe veya başka bir bilgisayara kopyalayın.
+
+Geri yüklemek için: "Yedekten geri yükle" -> o dosyayı seçin.
+
+
+6) KULLANIM
+-----------
+Panel          Bu ayki satış, tahsilat, toplam alacak ve takip
+               edilmesi gereken borçlular.
+
+Müşteriler     Arama kutusu; "Borçlular" ve "Vadesi geçmiş"
+               filtreleri; köye göre süzme.
+
+Müşteri kartı  Aldıkları, ödemeleri, bağlantıları, notları.
+               Borç kendiliğinden hesaplanır.
+
+Yeni Kayıt     Üç biçimde çalışır:
+                 - Yeni müşteri
+                 - Mevcut müşteriye satış
+                 - Sadece ödeme gir
+
+Ayarlar        Gemini bağlantısı, mikrofon seçimi, güncelleme,
+               yedekleme.
+
+Soru Sor       Normal cümleyle sorun:
+                 "Ahmet Yılmaz borcunu ödedi mi?"
+                 "Kimler ödeme yapmadı?"
+                 "Ahmet Yılmaz ne aldı?"
+                 "Ahmet Yılmaz kiminle bağlantılı?"
+                 "Bu ay ne kadar sattım?"
+
+
+6.0) SESLİ KAYIT — konuşarak müşteri doldurma
+----------------------------------------------
+Gemini açıkken (bkz. 6.1) programda üç yerde mikrofon butonu çıkar:
+
+  Yeni Kayıt    "Konuşarak doldur" — müşteriyi normal cümleyle anlat,
+                program formu kendi doldurur.
+  Soru Sor      "Konuş" — soruyu söyle, cevaplasın.
+  Müşteri kartı "Konuşarak yaz" — notu söyle, not alanına yazsın.
+
+Nasıl kullanılır:
+  1. Butona bas. İlk seferde Windows mikrofon izni sorar -> "İzin ver".
+  2. Konuş. Kutuda süre ve ses çubukları görünür; çubuklar oynuyorsa
+     sesin gidiyor demektir.
+  3. "Bitir ve çöz" e bas. Birkaç saniye içinde alanlar dolar.
+  4. ÖNEMLİ: Program ASLA kendiliğinden kaydetmez. Doldurulan alanları
+     kontrol et, sonra "Kaydet" e bas.
+
+Örnek cümle (tek nefeste söylenebilir):
+  "Ahmet Yılmaz, Karaağaç'tan, dört çuval gübre aldı sekiz bin lira,
+   beş bin lirasını nakit ödedi, kalanı hasat sonrası verecek,
+   hesabı babası Mehmet Yılmaz'ın üstüne yazılsın,
+   buğdayında sararma var."
+
+KIRMIZI ÇERÇEVELİ ALANLAR: Program net duyamadığı alanları kırmızı
+çerçeveyle işaretler ve yukarıda listeler. Bunları mutlaka gözden geçir.
+"DUYULAN" kutusunda ne anlaşıldığı aynen yazar; oradan kontrol et.
+
+MİKROFON SEÇİMİ:
+  Ayarlar -> Mikrofon bölümü. "Mikrofonları bul" deyip listeden seç,
+  "Mikrofonu dene" ile konuşarak sına. Çubuklar oynamıyorsa başka bir
+  mikrofon seç. Seçim kaydedilir, her açılışta hatırlanır.
+
+Notlar:
+  * Ses kaydı diske YAZILMAZ. Sadece Google'a gönderilip yazıya çevrilir.
+  * Bir kayıt en fazla 3 dakikadır; dolunca kendiliğinden durur.
+  * Mikrofon butonları Gemini anahtarı girilmeden açılmaz.
+  * "Ses kaydını kabul etmedi" hatası alırsan Ayarlar'dan "Ses modeli"ni
+    değiştir.
+
+
+6.1) GEMİNİ (akıllı soru-cevap) — isteğe bağlı
+-----------------------------------------------
+Program iki türlü soru cevaplayabilir:
+
+  KAPALI (varsayılan)  Programın kendi basit araması. İnternetsiz
+                       çalışır, hiçbir şey dışarı gitmez. Sadece
+                       belirli soru kalıplarını anlar.
+
+  AÇIK                 Soru, müşteri defterinizle birlikte Google'ın
+                       Gemini servisine gönderilir; cevap yalnızca
+                       sizin kayıtlarınızdan üretilir. Her türlü
+                       cümleyi anlar.
+
+Açmak için:
+  1. aistudio.google.com adresine Google hesabıyla girin.
+  2. "Get API key" / "API anahtarı al" deyip bir anahtar oluşturun.
+  3. Programda Ayarlar -> "Gemini API anahtarı" kutusuna yapıştırın
+     -> Kaydet -> "Bağlantıyı dene" -> başarılıysa "Aç".
+
+ÖNEMLİ — BİLMENİZ GEREKEN:
+  * Gemini açıkken soru sorduğunuzda müşteri defteriniz (isimler,
+    telefonlar, borçlar, notlar) Google'a gönderilir. Bunu
+    istemiyorsanız Gemini'yi kapalı bırakın; program yine çalışır.
+  * Anahtar bu bilgisayarda ayarlar.json dosyasında durur.
+    Bu dosyayı kimseyle paylaşmayın.
+  * Google'ın ücretsiz kullanımında dakikalık/günlük sınır vardır.
+    Sınır dolarsa program "kota doldu" der ve kendi aramasıyla
+    cevap verir; hiçbir şey bozulmaz.
+  * İnternet yoksa veya anahtar çalışmazsa program çökmez; sebebini
+    yazar ve kendi aramasıyla cevaplar.
+  * Kayıt girme, borç hesaplama ve listeler Gemini'den bağımsızdır,
+    her zaman internetsiz çalışır.
+  * Sesli kayıt da Gemini'ye bağlıdır: ses kaydı Google'a gönderilir.
+    Gemini kapalıyken mikrofon butonları çalışmaz, klavyeyle her şey
+    yine yapılabilir.
+
+
+7) HESAP BAĞLANTISI (bir kişinin hesabı başkasının üstündeyse)
+---------------------------------------------------------------
+Yeni kayıt eklerken "Hesap kimin üstüne yazılı?" kutusundan
+hesabın sahibini seçin ve ilişkiyi işaretleyin.
+
+Örnek: Ahmet'in hesabı babası Mehmet Yılmaz'ın üstündeyse,
+Ahmet'i eklerken hesap sahibi olarak Mehmet Yılmaz'ı seçin.
+İki kayıt birbirine bağlanır ve her iki kartta da görünür.
+
+
+8) SORUN ÇIKARSA
+----------------
+- Sol altta kırmızı "KAYDEDİLEMEDİ" uyarısı görürseniz hemen
+  "Yedek al" deyin. Klasör yazma izni olmayan bir yerdeyse bu
+  uyarı çıkar; klasörü C:\MacarZeka gibi bir yere taşımak çözer.
+
+- Program açılmıyor / pencere gelmiyorsa antivirüs engelliyor
+  olabilir. Antivirüste MacarZeka klasörünü "izin verilenler"e
+  ekleyin.
+
+- Pencereyi kapattıktan sonra program arka planda yaklaşık
+  15 saniye daha açık kalır, sonra kendi kendine kapanır.
+  Bu normaldir, bir şey yapmanız gerekmez.
+
+- Programı iki kez açarsanız ikinci kopya açılmaz, var olan
+  pencere öne gelir. Bu da normaldir; veriler bu sayede korunur.
+
+- Güncelleme yapılamazsa program bunu söyler ve eski sürümle
+  çalışmaya devam eder. Kayıtlarınız etkilenmez.
+
+
+================================================================
+ Bütün kayıtlar bu bilgisayarda tutulur.
+================================================================

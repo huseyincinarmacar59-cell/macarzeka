@@ -1,0 +1,30 @@
+# derlenmiş dosyalar
+MacarZeka.exe
+macarzeka-linux
+*.syso
+dist/
+paket/
+
+# test çıktıları
+test-calisma/
+test-ses/
+test-gemini/
+test-tarayici/
+test-guncelleme/
+test-depo-veri/
+*-sonuc.txt
+iz*.txt
+*.png
+!icon.png
+
+# çalışma zamanı verisi — ASLA depoya girmemeli
+veriler.json
+ayarlar.json
+yedekler/
+oturum.port
+.pencere-ayarlari/
+*.eski
+*.yeni
+*.bozuk-*
+
+node_modules/
