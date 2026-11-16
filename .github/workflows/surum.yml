@@ -1,7 +1,12 @@
 name: Sürüm yayımla
 
-# v1.4 gibi bir etiket gönderince Windows programını derler ve
-# Releases sayfasına yükler. Program bunu görüp kendini günceller.
+# v1.4 gibi bir etiket gönderince (ya da Releases sayfasından sürüm
+# yayımlayınca) Windows programını derler ve Releases'a yükler.
+# Program bunu görüp kendini günceller.
+#
+# "Run workflow" ile elle de çalıştırılabilir; o zaman sürüm yayımlanmaz,
+# derlenen dosya yalnızca Actions sayfasına ek olarak konur (deneme amaçlı).
+
 on:
   push:
     tags: ['v*']
@@ -20,10 +25,18 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Sürüm numarasını etiketten al
+      - name: Sürüm numarasını belirle
+        id: surum
         run: |
-          ETIKET="${GITHUB_REF_NAME#v}"
-          echo "Etiket sürümü: $ETIKET"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            ETIKET="${GITHUB_REF_NAME#v}"
+            echo "yayim=evet" >> "$GITHUB_OUTPUT"
+          else
+            ETIKET="0.0-deneme-${GITHUB_RUN_NUMBER}"
+            echo "yayim=hayir" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Sürüm: $ETIKET"
+          echo "etiket=$ETIKET" >> "$GITHUB_OUTPUT"
           sed -i "s/^const surum = \".*\"$/const surum = \"$ETIKET\"/" main.go
           grep -n 'const surum' main.go
 
@@ -35,20 +48,35 @@ jobs:
           GOOS: windows
           GOARCH: amd64
           CGO_ENABLED: 0
-        run: go build -trimpath -ldflags "-H windowsgui -s -w" -o MacarZeka.exe .
+        run: |
+          go build -trimpath -ldflags "-H windowsgui -s -w" -o MacarZeka.exe .
+          ls -lh MacarZeka.exe
+          file MacarZeka.exe
 
       - name: Paketi hazırla
         run: |
           mkdir -p paket/MacarZeka
-          cp MacarZeka.exe paket/MacarZeka/
-          cp OKUBENI.txt paket/MacarZeka/ 2>/dev/null || true
-          cp icon.ico    paket/MacarZeka/ 2>/dev/null || true
+          cp MacarZeka.exe OKUBENI.txt icon.ico paket/MacarZeka/
           cd paket && zip -r -9 ../MacarZeka-Windows-64bit.zip MacarZeka
+          cd .. && ls -lh MacarZeka-Windows-64bit.zip
 
+      # Etiketle geldiyse: Releases sayfasına yükle (program buradan güncellenir)
       - name: Releases sayfasına yükle
+        if: steps.surum.outputs.yayim == 'evet'
         uses: softprops/action-gh-release@v2
         with:
+          name: MacarZeka ${{ steps.surum.outputs.etiket }}
           files: |
             MacarZeka.exe
             MacarZeka-Windows-64bit.zip
           generate_release_notes: true
+
+      # Elle çalıştırıldıysa: yalnızca deneme çıktısı olarak sakla
+      - name: Deneme çıktısını sakla
+        if: steps.surum.outputs.yayim != 'evet'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MacarZeka-deneme
+          path: |
+            MacarZeka.exe
+            MacarZeka-Windows-64bit.zip
