@@ -28,3 +28,4 @@ oturum.port
 *.bozuk-*
 
 node_modules/
+test-ikililer/

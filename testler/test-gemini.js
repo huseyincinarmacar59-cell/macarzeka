@@ -7,12 +7,15 @@ const { app, BrowserWindow } = require("electron");
 const { spawn } = require("child_process");
 const http = require("http");
 const path = require("path");
+const KOK_DIZIN = path.join(__dirname, "..");
+function kok(a){ return path.join(KOK_DIZIN, a); }
+function yeniSurumYolu(a){ return path.join(KOK_DIZIN, "test-ikililer", a); }
 const fs = require("fs");
 
-const KOK = "/home/claude/macarzeka/test-gemini";
+const KOK = kok("test-gemini");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(KOK, { recursive: true });
-fs.copyFileSync("/home/claude/macarzeka/macarzeka-linux", path.join(KOK, "MacarZeka"));
+fs.copyFileSync(kok("macarzeka-linux"), path.join(KOK, "MacarZeka"));
 fs.chmodSync(path.join(KOK, "MacarZeka"), 0o755);
 
 const veriDosya = path.join(KOK, "veriler.json");
@@ -224,10 +227,10 @@ app.whenReady().then(async function () {
   ok("Bütün bu işlemlerden sonra veri sağlam", JSON.parse(fs.readFileSync(veriDosya, "utf8")).musteriler.length === 4);
 
   await js("git('ayarlar')"); await bekle(400);
-  fs.writeFileSync("/home/claude/macarzeka/ekran-ayarlar.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("ekran-ayarlar.png"), (await win.webContents.capturePage()).toPNG());
   await js("git('soru'); document.getElementById('soruKutu').value='Ahmet Yılmaz borcunu ödedi mi?'; sor(); 0;");
   await bekle(700);
-  fs.writeFileSync("/home/claude/macarzeka/ekran-soru.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("ekran-soru.png"), (await win.webContents.capturePage()).toPNG());
 
   win.destroy();
   bitir();
@@ -241,7 +244,7 @@ function bitir() {
   if (hatalar.length) m = m.concat(["", "--- HATALAR ---"], hatalar, ["", "SONUC: " + hatalar.length + " HATA / " + basarili + " BASARILI"]);
   else m.push("", "SONUC: HEPSI BASARILI (" + basarili + " kontrol)");
   const metin = m.join("\n") + "\n";
-  try { fs.writeFileSync("/home/claude/macarzeka/gemini-sonuc.txt", metin); } catch (e) {}
+  try { fs.writeFileSync(kok("gemini-sonuc.txt"), metin); } catch (e) {}
   process.stdout.write(metin);
   setTimeout(function () { app.exit(hatalar.length ? 1 : 0); }, 250);
 }

@@ -7,12 +7,15 @@
 const { app, BrowserWindow } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
+const KOK_DIZIN = path.join(__dirname, "..");
+function kok(a){ return path.join(KOK_DIZIN, a); }
+function yeniSurumYolu(a){ return path.join(KOK_DIZIN, "test-ikililer", a); }
 const fs = require("fs");
 
-const KOK = "/home/claude/macarzeka/test-tarayici";
+const KOK = kok("test-tarayici");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(path.join(KOK, "sahte"), { recursive: true });
-fs.copyFileSync("/home/claude/macarzeka/macarzeka-linux", path.join(KOK, "MacarZeka"));
+fs.copyFileSync(kok("macarzeka-linux"), path.join(KOK, "MacarZeka"));
 fs.chmodSync(path.join(KOK, "MacarZeka"), 0o755);
 
 /* hemen kapanan sahte tarayıcı */
@@ -100,7 +103,7 @@ function bitir() {
   if (hatalar.length) m = m.concat(["", "--- HATALAR ---"], hatalar, ["", "SONUC: " + hatalar.length + " HATA / " + basarili + " BASARILI"]);
   else m.push("", "SONUC: HEPSI BASARILI (" + basarili + " kontrol)");
   const metin = m.join("\n") + "\n";
-  try { fs.writeFileSync("/home/claude/macarzeka/tarayici-sonuc.txt", metin); } catch (e) {}
+  try { fs.writeFileSync(kok("tarayici-sonuc.txt"), metin); } catch (e) {}
   process.stdout.write(metin);
   setTimeout(function () { app.exit(hatalar.length ? 1 : 0); }, 250);
 }

@@ -6,10 +6,13 @@
 const { app, BrowserWindow } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
+const KOK_DIZIN = path.join(__dirname, "..");
+function kok(a){ return path.join(KOK_DIZIN, a); }
+function yeniSurumYolu(a){ return path.join(KOK_DIZIN, "test-ikililer", a); }
 const fs = require("fs");
 
-const PROGRAM = "/home/claude/macarzeka/macarzeka-linux";
-const KOK = "/home/claude/macarzeka/test-calisma";
+const PROGRAM = kok("macarzeka-linux");
+const KOK = kok("test-calisma");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(KOK, { recursive: true });
 fs.copyFileSync(PROGRAM, path.join(KOK, "MacarZeka"));
@@ -167,7 +170,7 @@ app.whenReady().then(async function () {
 
   /* ekran görüntüsü */
   await bekle(300);
-  fs.writeFileSync("/home/claude/macarzeka/son-panel.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("son-panel.png"), (await win.webContents.capturePage()).toPNG());
 
   /* ikinci kopya açılmamalı */
   const ikinci = spawn(path.join(KOK, "MacarZeka"), [], {
@@ -210,7 +213,7 @@ function bitir() {
     satirlar.push("", "SONUC: HEPSI BASARILI (" + basarili + " kontrol)");
   }
   const metin = satirlar.join("\n") + "\n";
-  try { fs.writeFileSync("/home/claude/macarzeka/e2e-sonuc.txt", metin); } catch (e) {}
+  try { fs.writeFileSync(kok("e2e-sonuc.txt"), metin); } catch (e) {}
   process.stdout.write(metin);
   setTimeout(function () { app.exit(hatalar.length ? 1 : 0); }, 250);
 }

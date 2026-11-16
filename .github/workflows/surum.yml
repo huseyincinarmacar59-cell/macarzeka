@@ -1,19 +1,33 @@
 name: Sürüm yayımla
 
-# v1.4 gibi bir etiket gönderince (ya da Releases sayfasından sürüm
-# yayımlayınca) Windows programını derler ve Releases'a yükler.
-# Program bunu görüp kendini günceller.
+# İKİ YOLDAN ÇALIŞIR
 #
-# "Run workflow" ile elle de çalıştırılabilir; o zaman sürüm yayımlanmaz,
-# derlenen dosya yalnızca Actions sayfasına ek olarak konur (deneme amaçlı).
+# 1) TEK TIKLA (önerilen, bilgisayara bir şey kurmaya gerek yok):
+#    Actions -> "Sürüm yayımla" -> "Run workflow" -> sürüm kutusuna 1.4 yaz -> Run
+#    Etiketi, derlemeyi ve sürüm sayfasını bu akış kendisi oluşturur.
+#
+# 2) ETİKETLE:
+#    git tag v1.4 && git push origin v1.4
+#
+# Her iki yolda da sürüm numarası koda otomatik yazılır; main.go'ya elle
+# dokunmaya gerek yoktur.
 
 on:
+  workflow_dispatch:
+    inputs:
+      surum:
+        description: 'Sürüm numarası (örn. 1.4) — başına v koyma'
+        required: true
+        type: string
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: surum-yayimla
+  cancel-in-progress: false
 
 jobs:
   derle:
@@ -26,19 +40,39 @@ jobs:
           go-version: '1.24'
 
       - name: Sürüm numarasını belirle
-        id: surum
+        id: s
         run: |
+          set -euo pipefail
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            ETIKET="${GITHUB_REF_NAME#v}"
-            echo "yayim=evet" >> "$GITHUB_OUTPUT"
+            SURUM="${GITHUB_REF_NAME#v}"
           else
-            ETIKET="0.0-deneme-${GITHUB_RUN_NUMBER}"
-            echo "yayim=hayir" >> "$GITHUB_OUTPUT"
+            SURUM="${{ inputs.surum }}"
+            SURUM="${SURUM#v}"
           fi
-          echo "Sürüm: $ETIKET"
-          echo "etiket=$ETIKET" >> "$GITHUB_OUTPUT"
-          sed -i "s/^const surum = \".*\"$/const surum = \"$ETIKET\"/" main.go
+
+          # Sadece 1.4 / 1.4.2 gibi numaralar kabul edilir
+          if ! printf '%s' "$SURUM" | grep -Eq '^[0-9]+(\.[0-9]+){1,2}$'; then
+            echo "HATA: '$SURUM' geçerli bir sürüm numarası değil. Örnek: 1.4 veya 1.4.2"
+            exit 1
+          fi
+
+          echo "Yayımlanacak sürüm: $SURUM"
+          echo "surum=$SURUM"   >> "$GITHUB_OUTPUT"
+          echo "etiket=v$SURUM" >> "$GITHUB_OUTPUT"
+
+          sed -i "s/^const surum = \".*\"$/const surum = \"$SURUM\"/" main.go
           grep -n 'const surum' main.go
+
+      - name: Aynı sürüm zaten var mı?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            if gh release view "${{ steps.s.outputs.etiket }}" >/dev/null 2>&1; then
+              echo "HATA: ${{ steps.s.outputs.etiket }} zaten yayımlanmış. Daha büyük bir numara ver."
+              exit 1
+            fi
+          fi
 
       - name: Denetle
         run: go vet ./...
@@ -49,34 +83,39 @@ jobs:
           GOARCH: amd64
           CGO_ENABLED: 0
         run: |
+          set -euo pipefail
           go build -trimpath -ldflags "-H windowsgui -s -w" -o MacarZeka.exe .
           ls -lh MacarZeka.exe
           file MacarZeka.exe
+          # Gerçekten Windows programı mı ve sürüm gömülmüş mü?
+          file MacarZeka.exe | grep -q "PE32+ executable" || { echo "HATA: çıktı Windows programı değil"; exit 1; }
+          grep -q "MacarZeka/${{ steps.s.outputs.surum }}" MacarZeka.exe || { echo "HATA: sürüm numarası gömülmemiş"; exit 1; }
+          echo "Derleme doğrulandı."
 
       - name: Paketi hazırla
         run: |
+          set -euo pipefail
           mkdir -p paket/MacarZeka
           cp MacarZeka.exe OKUBENI.txt icon.ico paket/MacarZeka/
           cd paket && zip -r -9 ../MacarZeka-Windows-64bit.zip MacarZeka
           cd .. && ls -lh MacarZeka-Windows-64bit.zip
 
-      # Etiketle geldiyse: Releases sayfasına yükle (program buradan güncellenir)
-      - name: Releases sayfasına yükle
-        if: steps.surum.outputs.yayim == 'evet'
+      - name: Sürümü yayımla
         uses: softprops/action-gh-release@v2
         with:
-          name: MacarZeka ${{ steps.surum.outputs.etiket }}
+          tag_name: ${{ steps.s.outputs.etiket }}
+          name: MacarZeka ${{ steps.s.outputs.surum }}
           files: |
             MacarZeka.exe
             MacarZeka-Windows-64bit.zip
           generate_release_notes: true
+          make_latest: true
 
-      # Elle çalıştırıldıysa: yalnızca deneme çıktısı olarak sakla
-      - name: Deneme çıktısını sakla
-        if: steps.surum.outputs.yayim != 'evet'
-        uses: actions/upload-artifact@v4
-        with:
-          name: MacarZeka-deneme
-          path: |
-            MacarZeka.exe
-            MacarZeka-Windows-64bit.zip
+      - name: Özet
+        run: |
+          {
+            echo "## MacarZeka ${{ steps.s.outputs.surum }} yayımlandı"
+            echo ""
+            echo "- Sürüm sayfası: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.s.outputs.etiket }}"
+            echo "- Kurulu programlar açılışta bu sürümü görüp güncelleme teklif edecek."
+          } >> "$GITHUB_STEP_SUMMARY"

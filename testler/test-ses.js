@@ -7,16 +7,19 @@ const { app, BrowserWindow } = require("electron");
 const { spawn } = require("child_process");
 const http = require("http");
 const path = require("path");
+const KOK_DIZIN = path.join(__dirname, "..");
+function kok(a){ return path.join(KOK_DIZIN, a); }
+function yeniSurumYolu(a){ return path.join(KOK_DIZIN, "test-ikililer", a); }
 const fs = require("fs");
 
 // Sahte mikrofon + izin kutusunu otomatik onayla (SADECE testte)
 app.commandLine.appendSwitch("use-fake-device-for-media-stream");
 app.commandLine.appendSwitch("use-fake-ui-for-media-stream");
 
-const KOK = "/home/claude/macarzeka/test-ses";
+const KOK = kok("test-ses");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(KOK, { recursive: true });
-fs.copyFileSync("/home/claude/macarzeka/macarzeka-linux", path.join(KOK, "MacarZeka"));
+fs.copyFileSync(kok("macarzeka-linux"), path.join(KOK, "MacarZeka"));
 fs.chmodSync(path.join(KOK, "MacarZeka"), 0o755);
 
 const veriDosya = path.join(KOK, "veriler.json");
@@ -330,12 +333,12 @@ app.whenReady().then(async function () {
   mod = "form";
   await js("git('yeni'); gorunum.mod='yeni'; ciz(); 0;"); await bekle(300);
   await js("kayitBaslat('form'); 0;"); await bekle(1500);
-  fs.writeFileSync("/home/claude/macarzeka/ses-kayit.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("ses-kayit.png"), (await win.webContents.capturePage()).toPNG());
   await js("kayitDurdur(); 0;"); await bekle(2600);
-  fs.writeFileSync("/home/claude/macarzeka/ses-form.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("ses-form.png"), (await win.webContents.capturePage()).toPNG());
   await js("git('ayarlar'); 0;"); await bekle(400);
   await js("mikrofonDene(); 0;"); await bekle(1200);
-  fs.writeFileSync("/home/claude/macarzeka/ses-ayarlar.png", (await win.webContents.capturePage()).toPNG());
+  fs.writeFileSync(kok("ses-ayarlar.png"), (await win.webContents.capturePage()).toPNG());
   await js("seviyeKapat(); 0;");
 
   win.destroy();
@@ -350,7 +353,7 @@ function bitir() {
   if (hatalar.length) m = m.concat(["", "--- HATALAR ---"], hatalar, ["", "SONUC: " + hatalar.length + " HATA / " + basarili + " BASARILI"]);
   else m.push("", "SONUC: HEPSI BASARILI (" + basarili + " kontrol)");
   const metin = m.join("\n") + "\n";
-  try { fs.writeFileSync("/home/claude/macarzeka/ses-sonuc.txt", metin); } catch (e) {}
+  try { fs.writeFileSync(kok("ses-sonuc.txt"), metin); } catch (e) {}
   process.stdout.write(metin);
   setTimeout(function () { app.exit(hatalar.length ? 1 : 0); }, 250);
 }
