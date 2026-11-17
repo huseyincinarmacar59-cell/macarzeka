@@ -12,6 +12,7 @@ function yeniSurumYolu(a){ return path.join(KOK_DIZIN, "test-ikililer", a); }
 const fs = require("fs");
 
 const PROGRAM = kok("macarzeka-linux");
+/* PROGRAM_YOK_KONTROL */ if (!fs.existsSync(PROGRAM)) { console.error("Once programi derle: go build -o macarzeka-linux ."); process.exit(3); }
 const KOK = kok("test-calisma");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(KOK, { recursive: true });

@@ -2,8 +2,20 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
 <title>MacarZeka — Müşteri Takibi</title>
+
+<!-- Telefonda "Ana Ekrana Ekle" dendiğinde uygulama gibi açılsın -->
+<meta name="theme-color" content="#13251D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MacarZeka">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="manifest" href="manifest.json">
 <style>
   :root{
     --bg:#F7F5EF; --card:#FFFFFF; --ink:#16211B; --muted:#566159;
@@ -109,6 +121,48 @@
   .duyulan{background:#FAF8F2;border:1px solid var(--line2);border-radius:12px;padding:14px;font-size:15px;line-height:1.6}
   @media (max-width:1150px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media (max-width:900px){ .grid2,.grid3{grid-template-columns:1fr} }
+
+  /* ---- telefon: yan menü alta iner, uygulama gibi dursun ---- */
+  @media (max-width:760px){
+    .app{flex-direction:column;height:auto;min-height:100vh;min-height:100dvh}
+    .side{
+      position:fixed;left:0;right:0;bottom:0;z-index:70;
+      flex:none;flex-direction:row;gap:0;overflow:visible;
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+      border-top:1px solid #1E3A2E;
+    }
+    .side .brand,.side .side-foot{display:none}
+    .nav{
+      flex:1 1 0;min-width:0;flex-direction:column;gap:3px;
+      padding:7px 2px;min-height:54px;font-size:11px;font-weight:600;
+      text-align:center;align-items:center;justify-content:center;border-radius:12px;
+    }
+    .nav svg{width:21px;height:21px;flex:none}
+    .nav.on{background:var(--dark2)}
+    .main{
+      flex:1 1 auto;overflow:visible;
+      padding:calc(16px + env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
+    }
+    body{overflow:auto}
+    h1{font-size:23px}
+    .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+    .card{padding:14px}
+    .card .v{font-size:22px}
+    .box-p{padding:15px}
+    .head{gap:11px;margin-bottom:16px}
+    .cols{gap:15px}
+    .col-main,.col-side{flex:1 1 100%}
+    th,td{padding:11px 12px}
+    .yaz{flex-wrap:wrap}
+    .yaz input{flex:1 1 100%}
+    .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+    /* iOS: yazı alanına dokununca sayfayı yakınlaştırmasın */
+    input,select,textarea{font-size:16px}
+  }
+  @media (max-width:420px){
+    .cards{grid-template-columns:1fr}
+    .nav{font-size:10px}
+  }
   @media print{ .side{display:none} body{overflow:visible} .main{overflow:visible} }
 </style>
 </head>
@@ -1873,6 +1927,13 @@ function basla(){
       if(sesDestekli()) mikrofonlariGetir(false).then(function(){ if(gorunum.ad==="ayarlar") ciz(); }).catch(function(){});
       // yeni sürüm var mı? (sessiz; yoksa hiçbir şey göstermez)
       setTimeout(function(){ guncellemeyeBak(false).then(function(b){ if(b && b.var) ciz(); }); }, 2500);
+      // Program açık kalırsa da yeni sürümü görsün: 15 dakikada bir bak.
+      // Şerit yalnızca Panel ekranında çıkar, kayıt girerken rahatsız etmez.
+      setInterval(function(){
+        if(gorunum.guncelleme && gorunum.guncelleme.var) return;  // zaten biliyoruz
+        if(gorunum.guncellemeKuruluyor) return;
+        guncellemeyeBak(true).then(function(b){ if(b && b.var && gorunum.ad==="panel") ciz(); });
+      }, 15*60*1000);
       if(uyari) setTimeout(function(){ alert("DİKKAT\n\n"+uyari); },400);
     }).catch(function(e){
       durumYaz(); ciz(); alert("Veri okunamadı: "+e.message);

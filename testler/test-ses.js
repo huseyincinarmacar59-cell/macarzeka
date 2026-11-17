@@ -19,6 +19,7 @@ app.commandLine.appendSwitch("use-fake-ui-for-media-stream");
 const KOK = kok("test-ses");
 fs.rmSync(KOK, { recursive: true, force: true });
 fs.mkdirSync(KOK, { recursive: true });
+/* PROGRAM_YOK_KONTROL */ if (!fs.existsSync(kok("macarzeka-linux"))) { console.error("Once programi derle: go build -o macarzeka-linux ."); process.exit(3); }
 fs.copyFileSync(kok("macarzeka-linux"), path.join(KOK, "MacarZeka"));
 fs.chmodSync(path.join(KOK, "MacarZeka"), 0o755);
 

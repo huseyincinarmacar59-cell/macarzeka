@@ -111,7 +111,7 @@ func guncellemeAdresi() string {
 
 func guncellemeBak(zorla bool) (*GuncellemeBilgi, error) {
 	gKilit.Lock()
-	if !zorla && gSonuc != nil && time.Since(gSonBakis) < 30*time.Minute {
+	if !zorla && gSonuc != nil && time.Since(gSonBakis) < 8*time.Minute {
 		b := *gSonuc
 		gKilit.Unlock()
 		return &b, nil

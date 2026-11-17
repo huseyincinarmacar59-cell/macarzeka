@@ -20,11 +20,16 @@ import (
 	"sync"
 	"time"
 
-	_ "embed"
+	"embed"
 )
 
 //go:embed index.html
 var arayuz []byte
+
+// Ana ekran ikonu ve manifest: hem tarayıcı sürümünde hem programda aynı dosyalar.
+//
+//go:embed icon-180.png icon-192.png icon-512.png manifest.json
+var varliklar embed.FS
 
 const surum = "1.3"
 
@@ -257,6 +262,25 @@ func sunucuKur() *http.ServeMux {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Write(arayuz)
 	})
+
+	// İkonlar ve manifest (jeton istemez; gizli bir şey değiller).
+	for _, ad := range []string{"icon-180.png", "icon-192.png", "icon-512.png", "manifest.json"} {
+		dosya := ad
+		m.HandleFunc("/"+dosya, func(w http.ResponseWriter, r *http.Request) {
+			ham, err := varliklar.ReadFile(dosya)
+			if err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			if strings.HasSuffix(dosya, ".png") {
+				w.Header().Set("Content-Type", "image/png")
+			} else {
+				w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
+			}
+			w.Header().Set("Cache-Control", "public, max-age=86400")
+			w.Write(ham)
+		})
+	}
 
 	api := func(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
