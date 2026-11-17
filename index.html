@@ -550,7 +550,7 @@ function durumYaz(){
     else if(sonKayit) d.innerHTML='✅ Kaydedildi <b style="color:#fff">'+esc(sonKayit)+'</b><br><span style="font-size:11px">'+esc(bilgi.dosya||"")+'</span>';
     else d.innerHTML='Veriler şuraya kaydediliyor:<br><span style="font-size:11px;color:#fff">'+esc(bilgi.dosya||"veriler.json")+'</span>';
   } else {
-    d.innerHTML='⚠️ Tarayıcı modu.<br>Kayıtlar sadece bu tarayıcıda tutulur, düzenli yedek al.';
+    d.innerHTML='✅ Otomatik kaydediliyor';
   }
 }
 function hafizayaYaz(){ try{ localStorage.setItem(ANAHTAR, JSON.stringify(veri)); }catch(e){} }
@@ -1349,18 +1349,7 @@ function bosHTML(){
     '<div style="display:flex;gap:11px;justify-content:center;flex-wrap:wrap">'+
     '<button class="btn" data-git="yeni">İlk müşteriyi ekle</button>'+
     '<button class="btn btn2" id="ornek">Örnek kayıtlarla dene</button>'+
-    '</div></div></div>'+
-    (MASAUSTU ? '' :
-      '<div class="uyari" style="margin-top:18px;line-height:1.65">'+
-      '<b>Bu tarayıcı sürümüdür.</b> Kayıtlar yalnızca bu tarayıcıda tutulur; '+
-      'tarayıcı temizlenirse silinir, başka bilgisayarda görünmez. Denemek için uygundur.<br><br>'+
-      'Gerçek kullanım için <b>Windows programını</b> indir: kayıtlar klasörde dosya olarak durur, '+
-      'her gün otomatik yedek alınır, sesli kayıt ve akıllı soru-cevap çalışır, '+
-      'yeni sürümler kendiliğinden kurulur.<br>'+
-      '<a href="https://github.com/huseyincinarmacar59-cell/macarzeka/releases/latest" target="_blank" rel="noopener" '+
-      'style="display:inline-block;margin-top:12px;background:var(--green);color:#fff;border-radius:11px;'+
-      'padding:12px 18px;font-weight:600;text-decoration:none">Windows programını indir</a>'+
-      '</div>');
+    '</div></div></div>';
 }
 
 function listeHTML(){
@@ -2169,9 +2158,6 @@ function ornekYukle(){
   kaydet(); git("panel"); toast("Örnek kayıtlar eklendi");
 }
 
-window.addEventListener("beforeunload",function(e){
-  if(!MASAUSTU && kirli && veri.musteriler.length){ e.preventDefault(); e.returnValue=""; }
-});
 
 /* ---------- başlat ---------- */
 function basla(){

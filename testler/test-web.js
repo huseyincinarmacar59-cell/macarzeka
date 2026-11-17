@@ -82,9 +82,11 @@ app.whenReady().then(async function () {
   /* 2 — boş ekran ve indirme çağrısı */
   const bos = await js("document.getElementById('ekran').innerHTML");
   ok("Boş ekran göründü", bos.indexOf("Henüz hiç kayıt yok") >= 0);
-  ok("Tarayıcı sürümü uyarısı var", bos.indexOf("Bu tarayıcı sürümüdür") >= 0);
-  ok("Windows indirme bağlantısı var", bos.indexOf("releases/latest") >= 0);
-  ok("Sol altta tarayıcı kipi yazıyor", (await js("document.getElementById('durum').innerHTML")).indexOf("Tarayıcı modu") >= 0);
+  ok("Uyarı kutusu YOK", bos.indexOf("Bu tarayıcı sürümüdür") < 0);
+  ok("İndirme düğmesi YOK", bos.indexOf("releases/latest") < 0 && bos.indexOf("Windows programını") < 0);
+  ok("Sol altta sakin 'Otomatik kaydediliyor' yazıyor", (await js("document.getElementById('durum').innerHTML")).indexOf("Otomatik kaydediliyor") >= 0);
+  ok("Kapatırken 'Siteden ayrılsın mı?' sormuyor", (await js("window.onbeforeunload===null")) === true &&
+     require("fs").readFileSync(require("path").join(__dirname,"..","index.html"),"utf8").indexOf("beforeunload") < 0);
   ok("Anlamsız 'veri klasörü' düğmesi gizlendi", (await js("document.getElementById('klasorAc').style.display")) === "none",
      await js("document.getElementById('klasorAc').style.display || '(gorunur)'"));
 
