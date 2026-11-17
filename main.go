@@ -374,31 +374,6 @@ func sunucuKur() *http.ServeMux {
 		})
 	}))
 
-	m.HandleFunc("/api/goruntu", api(func(w http.ResponseWriter, r *http.Request) {
-		nabizAt()
-		var g struct {
-			Resim string `json:"resim"`
-			Tip   string `json:"tip"`
-			Bugun string `json:"bugun"`
-		}
-		ham, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 40<<20))
-		if err != nil {
-			jsonYaz(w, http.StatusOK, map[string]any{"ok": false, "hata": "Fotoğraf alınamadı: çok büyük olabilir."})
-			return
-		}
-		if err := json.Unmarshal(ham, &g); err != nil {
-			jsonYaz(w, http.StatusOK, map[string]any{"ok": false, "hata": "fotograf bicimi hatali"})
-			return
-		}
-		a := ayarOku()
-		v, err := geminiGoruntu(a, g.Tip, g.Resim, g.Bugun)
-		if err != nil {
-			jsonYaz(w, http.StatusOK, map[string]any{"ok": false, "hata": err.Error()})
-			return
-		}
-		jsonYaz(w, http.StatusOK, map[string]any{"ok": true, "veri": v, "model": a.GeminiSesModel})
-	}))
-
 	m.HandleFunc("/api/dinle", api(func(w http.ResponseWriter, r *http.Request) {
 		nabizAt()
 		var g struct {

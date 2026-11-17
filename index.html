@@ -228,7 +228,6 @@
     bilgi: function(){ return j("/api/bilgi"); },
     guncellemeBak: function(zorla){ return j("/api/guncelleme/bak"+(zorla?"?zorla=1":"")); },
     guncellemeKur: function(){ return j("/api/guncelleme/kur",{method:"POST"}); },
-    goruntu: function(d){ return j("/api/goruntu",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}); },
     dinle: function(d){ return j("/api/dinle",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}); },
     ayarlar: function(){ return j("/api/ayarlar"); },
     ayarKaydet: function(d){ return j("/api/ayarlar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}); },
@@ -253,15 +252,13 @@
       ayarlar:    function(){  return window.macar.ayarlar(); },
       ayarKaydet: function(d){ return window.macar.ayarKaydet(d); },
       sor:        function(d){ return window.macar.sor(d); },
-      dinle:      function(d){ return window.macar.dinle(d); },
-      gor:        function(d){ return window.macar.goruntu(d); }
+      dinle:      function(d){ return window.macar.dinle(d); }
     };
     return;
   }
   var ANAHTAR = "macarzeka_ayar_v1";
   var UC = "https://generativelanguage.googleapis.com/v1beta";
   var V_MODEL = "gemini-3.5-flash-lite", V_SES = "gemini-3.8-flash";
-  var Y_GORUNTU = "Sen bir tarım marketinin elle doldurulmuş veresiye/müşteri hesap kartının fotoğrafını okuyan araçsın.\nKartta üstte müşteri bilgileri (Adı Soyadı, T.C. No, Adres, Tel), altta bir tablo vardır:\nTarih | ÜRÜN | Adet | Tutar | Tahsilat | Bakiye. Kartın altında bir sayfa numarası (No ...) olabilir.\n\nGörevin bu kartı olduğu gibi okumak. ÇOK ÖNEMLİ KURALLAR:\n- Sadece kartta YAZAN şeyleri yaz. Okuyamadığın bir şeyi tahmin etme, uydurma.\n- Emin olmadığın her değeri \"supheli\" listesine ekle. Biçim: \"ad\", \"tc\", \"tel\", \"koy\" ya da\n  satırlar için \"satir3.tutar\" gibi (satır numarası 1'den başlar). Elle yazı okunurken hata\n  çok olur; dürüst ol, emin değilsen mutlaka supheli'ye koy.\n- Para: 33000, 82500 gibi sadece sayı yaz. Nokta/virgül/₺ koyma.\n- Tarih: kartta çoğu zaman yıl yazmaz (12.12, 07.11 gibi). Satırlar yukarıdan aşağıya\n  zaman sırasıyla yazılmıştır ve en alttaki satır bugünden sonra olamaz. Buna göre her\n  tarihe yıl ver ve YYYY-AA-GG biçiminde yaz. Örnek: bugün 2026-11-17 ise ve sıra\n  12.12, 29.07, 06.11 ise yıllar 2025, 2026, 2026 olur.\n- Her satır ya bir SATIŞ ya da bir TAHSİLAT'tır:\n  * Ürün/Adet/Tutar doluysa tur = \"satis\".\n  * Tahsilat sütunu doluysa ya da ürün yerine \"tahsilat\", \"ödeme\", \"havale\", \"nakit\" gibi\n    bir şey yazıyorsa tur = \"tahsilat\"; tutar alanına tahsil edilen miktarı yaz.\n- Adet sütununda sayının önünde \"ℓ\" ya da \"l\" işareti varsa bu litredir: miktar = \"15 lt\".\n  İşaret yoksa sadece sayıyı yaz.\n- Tahsilatlarda ödeme yöntemi yazıyorsa yontem şunlardan biri olsun:\n  Nakit, Havale / EFT, Kredi kartı, Çek, Senet. Yazmıyorsa boş bırak.\n- Bakiye sütununda bir rakam yazıyorsa o satırın bakiye alanına yaz (üstü çizilmiş\n  olsa bile). Tablodaki en son yazılı bakiyeyi sonBakiye'ye yaz.\n- Kartın üstünde \"vadeli\" gibi genel bir not varsa musteri.not alanına yaz.\n- Adres genelde köy ya da mahalle adıdır, koy alanına yaz.\n- Boş satırları atla.\n\nCevabını SADECE şu JSON biçiminde ver, başka hiçbir şey yazma, markdown kod bloğu kullanma:\n{\n  \"musteri\": { \"ad\": \"\", \"tc\": \"\", \"tel\": \"\", \"koy\": \"\", \"not\": \"\" },\n  \"sayfaNo\": \"\",\n  \"satirlar\": [\n    { \"tarih\": \"\", \"tur\": \"satis\", \"urun\": \"\", \"miktar\": \"\", \"tutar\": 0, \"yontem\": \"\", \"bakiye\": null }\n  ],\n  \"sonBakiye\": null,\n  \"supheli\": []\n}";
   var Y_SOR = "Sen bir ziraat mühendisinin müşteri defterini okuyan yardımcısısın.\nSana aşağıda o defterin tamamı verilecek; kullanıcının sorusunu YALNIZCA bu defterdeki bilgilere dayanarak cevapla.\n\nKurallar:\n- Türkçe, kısa ve net konuş. Gereksiz giriş cümlesi kurma, doğrudan cevabı ver.\n- Para tutarlarını \"12.500 ₺\" biçiminde yaz.\n- Tarihleri \"08.10.2026\" biçiminde yaz.\n- Defterde olmayan bir şey sorulursa \"Bu bilgi kayıtlarda yok\" de. Asla tahmin etme, uydurma.\n- Birden fazla kişi listelenecekse madde madde yaz.\n- Hesabı başkasının üstüne yazılı müşterilerde bunu mutlaka belirt.\n- Hesap yaparken dikkatli ol: kalan borç = toplam alış - toplam ödeme.\n- Kullanıcı defterde olmayan genel bir şey sorarsa (hava durumu, gübre tavsiyesi gibi)\n  kısaca bunun bu defterle ilgili olmadığını söyle.", Y_METIN = "Sen Türkçe konuşmayı yazıya çeviren bir araçsın.\nDuyduğun konuşmayı olduğu gibi, Türkçe yazım kurallarına uygun yaz.\nSadece yazıya çevrilmiş metni ver; açıklama, başlık, tırnak ekleme.\nKonuşmada anlamadığın bir yer varsa oraya [anlaşılmadı] yaz.\nSes boşsa veya hiç konuşma yoksa yalnızca [ses yok] yaz.", Y_FORM = "Sen bir ziraat mühendisinin sesli notunu müşteri kayıt formuna çeviren araçsın.\nÖnce konuşmayı Türkçe olarak yazıya çevir, sonra içinden form alanlarını çıkar.\n\nÇOK ÖNEMLİ KURALLAR:\n- Yalnızca konuşmada GEÇEN bilgileri doldur. Geçmeyen alanı boş bırak. ASLA tahmin etme, uydurma.\n- Para: \"sekiz bin lira\" -> 8000, \"on iki bin beş yüz\" -> 12500. Sadece sayı yaz, \"₺\" yazma.\n- Tarih: YYYY-AA-GG biçiminde. \"bugün\" -> bugünün tarihi, \"dün\" -> bir önceki gün,\n  \"geçen hafta\" gibi belirsizse boş bırak.\n- Ödeme yöntemi yalnızca şunlardan biri olabilir: Nakit, Havale / EFT, Kredi kartı, Çek, Senet.\n  Konuşmada geçmiyorsa boş bırak.\n- İlişki yalnızca şunlardan biri olabilir: Babası, Oğlu, Kardeşi, Eşi, Ortağı, Kiracısı, Akrabası.\n- \"falancanın hesabına yazılsın\", \"hesap babasının üstüne\" gibi bir ifade geçerse,\n  sana verilen MEVCUT MÜŞTERİLER listesinden o kişiyi bul ve hesapSahibiId alanına\n  o kişinin id'sini yaz. Listede yoksa hesapSahibiId'yi boş bırak, adını hesapSahibiAd'a yaz.\n- Konuşmada geçen ama forma girmeyen her şeyi (tarla durumu, hastalık, söz verilen şeyler)\n  \"not\" alanına yaz.\n- Net duyamadığın, emin olmadığın her alanın adını \"supheli\" listesine ekle. Dürüst ol:\n  emin değilsen mutlaka supheli'ye koy. Bu liste kullanıcının kontrol edeceği alanları gösterir.\n\nCevabını SADECE şu JSON biçiminde ver, başka hiçbir şey yazma, markdown kod bloğu kullanma:\n{\n  \"metin\": \"konuşmanın aynen yazıya çevrilmiş hali\",\n  \"ad\": \"\", \"tel\": \"\", \"koy\": \"\", \"arazi\": \"\",\n  \"urun\": \"\", \"miktar\": \"\", \"tarih\": \"\", \"tutar\": 0,\n  \"odenen\": 0, \"yontem\": \"\", \"odemeTarihi\": \"\", \"vade\": \"\", \"vadeNot\": \"\",\n  \"hesapSahibiId\": \"\", \"hesapSahibiAd\": \"\", \"iliski\": \"\",\n  \"not\": \"\",\n  \"supheli\": []\n}";
   var EN_BUYUK_SES = 13*1024*1024;
 
@@ -295,57 +292,6 @@
       return { hata: (e && e.name==="AbortError") ? "Google zamanında cevap vermedi. Tekrar dene."
                                                   : "Google'a bağlanılamadı. İnternet bağlantısını kontrol et." };
     }).then(function(x){ if(zaman) clearTimeout(zaman); return x; });
-  }
-  // Akışlı istek: cevap parça parça gelir, böylece ilerleme gösterilir ve
-  // Google yazmaya devam ettikçe zaman aşımı olmaz (sadece uzun sessizlikte kesilir).
-  function akis(model, govde, ilerle, sessizlik, toplam){
-    var a=oku(), ak=String(a.gemini_anahtar||"").trim();
-    if(!ak) return Promise.resolve({ hata:"Gemini anahtarı girilmemiş. Ayarlar ekranından anahtarı yapıştır." });
-    if(!(window.ReadableStream && window.TextDecoder && window.AbortController)) return istek(model, govde, toplam);
-    var dur=new AbortController(), son=Date.now(), bas=Date.now(), neden="";
-    var saat=setInterval(function(){
-      var n=Date.now();
-      if(n-son>sessizlik){ neden="sessiz"; dur.abort(); }
-      else if(n-bas>toplam){ neden="toplam"; dur.abort(); }
-    },1000);
-    var metin="", bitis="", kullanim=null, engel="";
-    return fetch(UC+"/models/"+encodeURIComponent(model)+":streamGenerateContent?alt=sse&key="+encodeURIComponent(ak), {
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(govde), signal:dur.signal
-    }).then(function(r){
-      if(r.status!==200 || !r.body) return r.text().then(function(t){
-        var j={}; try{ j=JSON.parse(t); }catch(e){}
-        if(Array.isArray(j)) j=j[0]||{};
-        return { kod:r.status, j:j };
-      });
-      var okuyucu=r.body.getReader(), coz=new TextDecoder(), tampon="";
-      function isle(satir){
-        satir=satir.trim(); if(satir.indexOf("data:")!==0) return;
-        var j; try{ j=JSON.parse(satir.slice(5)); }catch(e){ return; }
-        if(j.usageMetadata) kullanim=j.usageMetadata;
-        if(j.promptFeedback && j.promptFeedback.blockReason) engel=j.promptFeedback.blockReason;
-        var c=(j.candidates||[])[0]||{};
-        if(c.finishReason) bitis=c.finishReason;
-        (((c.content||{}).parts)||[]).forEach(function(p){ if(p && p.text && !p.thought) metin+=p.text; });
-      }
-      function dongu(){
-        return okuyucu.read().then(function(x){
-          son=Date.now();
-          if(x.done){ tampon.split("\n").forEach(isle); return; }
-          tampon+=coz.decode(x.value,{stream:true});
-          var i; while((i=tampon.indexOf("\n"))>=0){ isle(tampon.slice(0,i)); tampon=tampon.slice(i+1); }
-          if(ilerle) try{ ilerle(metin); }catch(e){}
-          return dongu();
-        });
-      }
-      return dongu().then(function(){
-        var j={ candidates:[{ content:{ parts:[{ text:metin }] }, finishReason:bitis }], usageMetadata:kullanim };
-        if(engel) j.promptFeedback={ blockReason:engel };
-        return { kod:200, j:j };
-      });
-    }).catch(function(e){
-      if(e && e.name==="AbortError") return { hata: neden==="sessiz" ? "Google uzun süre cevap vermedi. Tekrar dene." : "Okuma çok uzun sürdü. Tekrar dene; olmazsa sayfanın yarısını çekip yükle." };
-      return { hata:"Google'a bağlanılamadı. İnternet bağlantısını kontrol et." };
-    }).then(function(x){ clearInterval(saat); return x; });
   }
   function metniAl(j){
     var b=""; ((j&&j.candidates)||[]).forEach(function(c){ (((c||{}).content||{}).parts||[]).forEach(function(p){ if(p&&p.text) b+=p.text; }); });
@@ -383,45 +329,6 @@
 
   window.zeka = {
     yer: "tarayici",
-    gor: function(g){
-      var a=oku(); g=g||{};
-      var b64=String(g.resim||""), ham=Math.floor(b64.length*3/4);
-      if(ham>EN_BUYUK_SES) return Promise.resolve({ ok:false, hata:"Fotoğraf çok büyük ("+Math.round(ham/1048576)+" MB). Daha küçük bir fotoğraf dene." });
-      if(ham<2000) return Promise.resolve({ ok:false, hata:"Fotoğraf boş ya da bozuk geldi." });
-      var model=a.gemini_ses_model||V_SES;
-      var tip=String(g.tip||"image/jpeg").split(";")[0].trim(); if(tip.indexOf("image/")!==0) tip="image/jpeg";
-      function govde(jsonIste){
-        // Gemini 3 varsayılan olarak "çok düşünür": hem yavaşlar hem cevap yarıda kesilir.
-        // Düşünmeyi kıs, cevaba bol yer bırak. Model bu alanları tanımazsa yedek istek sade gider.
-        var u={ maxOutputTokens:16384 };
-        if(jsonIste){ u.response_mime_type="application/json"; u.thinkingConfig={ thinkingLevel:"minimal" }; }
-        return { system_instruction:{ parts:[{ text:Y_GORUNTU }] },
-                 contents:[{ parts:[{ text:"Bu müşteri hesap kartını oku. BUGÜNÜN TARİHİ: "+(g.bugun||"") }, { inline_data:{ mime_type:tip, data:b64 } }] }],
-                 generationConfig:u };
-      }
-      function bitir(x){
-        if(x.hata) return { ok:false, hata:x.hata };
-        var j=x.j||{};
-        if(x.kod!==200) return { ok:false, hata:sesHata(x.kod,(j.error||{}).message,model).replace("ses kaydını","fotoğrafı") };
-        if(j.promptFeedback && j.promptFeedback.blockReason) return { ok:false, hata:"Google bu fotoğrafı işlemedi ("+j.promptFeedback.blockReason+")." };
-        var o=jsonAyikla(metniAl(j));
-        if(!o){
-          var bitis=String((((j.candidates||[])[0])||{}).finishReason||"");
-          if(bitis==="MAX_TOKENS") return { ok:false, hata:"Google cevabı yarıda kesti. Tekrar dene; olmazsa sayfayı ikiye bölüp ayrı ayrı yükle." };
-          return { ok:false, hata:"Fotoğraf okunamadı. Daha net ve düz çekilmiş bir fotoğraf dene." };
-        }
-        var k=j.usageMetadata||{};
-        return { ok:true, veri:o, model:model, olcum:{ sure:Math.round((Date.now()-bas)/1000), dusunme:k.thoughtsTokenCount||0, cevap:k.candidatesTokenCount||0 } };
-      }
-      var bas=Date.now();
-      function ilerle(t){ if(g.ilerle) g.ilerle({ yaziyor:t.length>0, satir:(t.match(/"tarih"/g)||[]).length }); }
-      return akis(model, govde(true), ilerle, 60000, 240000).then(function(x){
-        var m=String(((x.j||{}).error||{}).message||"").toLowerCase();
-        if(x.kod===400 && (m.indexOf("response_mime_type")>=0||m.indexOf("responsemimetype")>=0||m.indexOf("unknown name")>=0||m.indexOf("invalid json payload")>=0||m.indexOf("thinking")>=0))
-          return akis(model, govde(false), ilerle, 60000, 240000).then(bitir);
-        return bitir(x);
-      });
-    },
     ayarlar: function(){ return Promise.resolve(cevap(oku())); },
     ayarKaydet: function(g){
       var a=oku(); g=g||{};
@@ -513,7 +420,6 @@
     <button class="nav" data-git="panel"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h7v6H4z"/><path d="M13 5h7v3h-7z"/><path d="M13 10h7v9h-7z"/><path d="M4 13h7v6H4z"/></svg> Panel</button>
     <button class="nav" data-git="musteriler"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.4"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.5a3.4 3.4 0 0 1 0 6.6"/><path d="M18 14.5c2 .7 3.2 2.2 3.6 4.5"/></svg> Müşteriler</button>
     <button class="nav" data-git="soru"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg> Soru Sor</button>
-    <button class="nav" data-git="foto"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8l1.4-2h6.6l1.4 2h1.8A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="12.5" r="3.6"/></svg> Fotoğraftan Aktar</button>
     <button class="nav" data-git="yeni"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg> Yeni Kayıt</button>
     <button class="nav" data-git="ayarlar"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/></svg> Ayarlar</button>
     <div class="side-foot">
@@ -1293,331 +1199,6 @@ function formaYaz(v, metin){
   toast("Forma yazıldı — kaydetmeden önce kontrol et");
 }
 
-
-/* ============================================================
-   FOTOĞRAFTAN AKTARMA — defter sayfasını okuyup kayda geçirir.
-   Hiçbir şey kendiliğinden kaydedilmez: önce kontrol ekranı.
-   ============================================================ */
-var YONTEMLER=["Nakit","Havale / EFT","Kredi kartı","Çek","Senet"];
-
-function fotoSifirla(){ gorunum.foto={ durum:"bos" }; }
-
-/* Fotoğrafı küçültüp JPEG'e çevirir; telefon fotoğrafındaki dönüklüğü düzeltir. */
-function fotoHazirla(dosya){
-  return new Promise(function(coz, red){
-    if(!dosya || !/^image\//.test(dosya.type||"") && !/\.(heic|heif|jpe?g|png|webp)$/i.test(dosya.name||"")){
-      red(new Error("Bu bir fotoğraf dosyası değil.")); return;
-    }
-    if(dosya.size>30*1024*1024){ red(new Error("Fotoğraf çok büyük (30 MB üstü).")); return; }
-    function hamGonder(){
-      var r=new FileReader();
-      r.onload=function(){ var t=String(r.result); coz({ b64:t.slice(t.indexOf(",")+1), tip:dosya.type||"image/heic", onizleme:"" }); };
-      r.onerror=function(){ red(new Error("Fotoğraf okunamadı.")); };
-      r.readAsDataURL(dosya);
-    }
-    var ac = window.createImageBitmap ? createImageBitmap(dosya,{ imageOrientation:"from-image" }) : Promise.reject(new Error("yok"));
-    ac.then(function(bm){
-      function ciz(enBuyuk, kalite){
-        var o=Math.min(1, enBuyuk/Math.max(bm.width,bm.height));
-        var c=document.createElement("canvas");
-        c.width=Math.max(1,Math.round(bm.width*o)); c.height=Math.max(1,Math.round(bm.height*o));
-        c.getContext("2d").drawImage(bm,0,0,c.width,c.height);
-        return c.toDataURL("image/jpeg", kalite);
-      }
-      var buyuk=ciz(1600,0.85), kucuk=ciz(420,0.7);
-      if(bm.close) bm.close();
-      coz({ b64:buyuk.slice(buyuk.indexOf(",")+1), tip:"image/jpeg", onizleme:kucuk });
-    }).catch(function(){
-      // Chrome iPhone'un HEIC biçimini açamaz; Gemini açabildiği için olduğu gibi gönder.
-      if(/heic|heif/i.test((dosya.type||"")+(dosya.name||"")) && dosya.size<12*1024*1024) hamGonder();
-      else red(new Error("Bu fotoğraf açılamadı. WhatsApp'tan gönderip oradan kopyalamayı dene."));
-    });
-  });
-}
-
-function fotoBaslat(dosya){
-  if(!window.zeka){ toast("Bu pencerede fotoğraf okunamıyor."); return; }
-  if(!ayar.anahtarVar){ gorunum.ad="foto"; gorunum.foto={ durum:"bos", hata:"Fotoğraf okumak için önce Ayarlar'dan Gemini anahtarını gir." }; ciz(); return; }
-  gorunum.ad="foto";
-  var no = (window.__fotoNo = (window.__fotoNo||0) + 1);   // eski okumaların cevabını yok saymak için
-  gorunum.foto={ durum:"okunuyor", no:no, basla:Date.now() }; ciz();
-  clearInterval(window.__fotoSaat);
-  window.__fotoSaat=setInterval(function(){
-    var f=gorunum.foto, el=document.getElementById("fotoSure");
-    if(!f || f.no!==no || f.durum!=="okunuyor"){ clearInterval(window.__fotoSaat); return; }
-    if(el) el.textContent=Math.round((Date.now()-f.basla)/1000)+" sn";
-  },1000);
-  fotoHazirla(dosya).then(function(h){
-    if(!gorunum.foto || gorunum.foto.no!==no) return null;
-    gorunum.foto.onizleme=h.onizleme; ciz();
-    window.__fotoBoyut=Math.round(h.b64.length*3/4/1024);
-    return window.zeka.gor({ resim:h.b64, tip:h.tip, bugun:bugun(), ilerle:function(d){
-      var f=gorunum.foto; if(!f || f.no!==no || f.durum!=="okunuyor") return;
-      f.yaziyor=d.yaziyor; f.okunan=d.satir;
-      var el=document.getElementById("fotoAsama"); if(el) el.textContent=fotoAsamaMetni(f);
-    }});
-  }).then(function(r){
-    if(!gorunum.foto || gorunum.foto.no!==no || gorunum.foto.durum!=="okunuyor") return;
-    if(!(r && r.ok)){ gorunum.foto={ durum:"bos", hata:(r&&r.hata)||"Fotoğraf okunamadı." }; ciz(); return; }
-    fotoSonucuKur(r.veri||{}, gorunum.foto.onizleme);
-    if(r.olcum) gorunum.foto.olcum=r.olcum;
-    ciz();
-  }).catch(function(e){
-    if(!gorunum.foto || gorunum.foto.no!==no) return;
-    gorunum.foto={ durum:"bos", hata:e.message }; ciz();
-  });
-}
-
-function fotoAsamaMetni(f){
-  if(f.yaziyor) return "Okunuyor: "+(f.okunan||0)+" satır okundu…";
-  if(f.onizleme) return "Google fotoğrafı inceliyor… (kalabalık sayfada 20-40 saniye sürebilir)";
-  return "Fotoğraf hazırlanıyor…";
-}
-
-function fotoTarih(t){
-  t=String(t||"").trim();
-  var m=t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(!m){
-    var k=t.match(/^(\d{1,2})[.\/-](\d{1,2})(?:[.\/-](\d{2,4}))?$/);
-    if(!k) return "";
-    var y=k[3]?(k[3].length===2?"20"+k[3]:k[3]):bugun().slice(0,4);
-    t=y+"-"+String(k[2]).padStart(2,"0")+"-"+String(k[1]).padStart(2,"0");
-  }
-  // Gelecekte bir tarih çıktıysa yılı yanlış verilmiştir: bir yıl geri al.
-  if(t>bugun()) t=(Number(t.slice(0,4))-1)+t.slice(4);
-  return t;
-}
-function fotoSayi(v){ var n=parseFloat(sayiAyikla(v)); return isFinite(n)?n:0; }
-
-function fotoSonucuKur(v, onizleme){
-  var mu=v.musteri||{}, sup={};
-  (Object.prototype.toString.call(v.supheli)==="[object Array]"?v.supheli:[]).forEach(function(x){ sup[String(x)]=1; });
-  var satirlar=(Object.prototype.toString.call(v.satirlar)==="[object Array]"?v.satirlar:[]).map(function(r,i){
-    var tur=(String(r.tur||"").toLowerCase().indexOf("tah")===0)?"tahsilat":"satis";
-    var s={ sec:true, tur:tur, tarih:fotoTarih(r.tarih), urun:String(r.urun||"").trim(),
-            miktar:String(r.miktar||"").trim(), tutar:fotoSayi(r.tutar),
-            yontem:listeIcinde(r.yontem, YONTEMLER), bakiye:(r.bakiye===null||r.bakiye===undefined||r.bakiye==="")?null:fotoSayi(r.bakiye),
-            sup:{} };
-    ["tarih","urun","miktar","tutar","yontem"].forEach(function(a){ if(sup["satir"+(i+1)+"."+a]) s.sup[a]=1; });
-    return s;
-  }).filter(function(s){ return s.tutar>0 || s.urun; });
-
-  var f={ durum:"hazir", onizleme:onizleme||"",
-    m:{ ad:String(mu.ad||"").trim(), tc:tcTemizle(mu.tc), tel:String(mu.tel||"").trim(), koy:String(mu.koy||"").trim(), not:String(mu.not||"").trim() },
-    supM:{ ad:!!sup.ad, tc:!!sup.tc, tel:!!sup.tel, koy:!!sup.koy },
-    sayfaNo:String(v.sayfaNo||"").trim(),
-    sonBakiye:(v.sonBakiye===null||v.sonBakiye===undefined||v.sonBakiye==="")?null:fotoSayi(v.sonBakiye),
-    satirlar:satirlar, hedef:"" };
-  // Kayıtlı müşteriyi bul: önce TC, sonra ad.
-  var es=null;
-  if(f.m.tc && tcGecerli(f.m.tc)) es=tcSahibi(f.m.tc,null);
-  if(!es && f.m.ad){ var n=norm(f.m.ad); es=veri.musteriler.filter(function(x){ return norm(x.ad)===n; })[0]||null; }
-  f.hedef = es ? es.id : "";
-  gorunum.foto=f;
-  fotoMukerrerIsaretle();
-}
-
-/* Kayıtlı müşteriye aktarılırken aynı satır zaten varsa işaretle, seçimini kaldır. */
-function fotoMukerrerIsaretle(){
-  var f=gorunum.foto; if(!f||!f.satirlar) return;
-  f.satirlar.forEach(function(s){
-    var onceki=s.var; s.var=false;
-    if(!f.hedef){ if(onceki) s.sec=true; return; }
-    if(s.tur==="satis") s.var=veri.satislar.some(function(x){ return x.musteriId===f.hedef && x.tarih===s.tarih && Number(x.tutar)===Number(s.tutar); });
-    else s.var=veri.odemeler.some(function(x){ return x.musteriId===f.hedef && x.tarih===s.tarih && Number(x.tutar)===Number(s.tutar); });
-    if(s.var) s.sec=false; else if(onceki) s.sec=true;
-  });
-}
-
-/* Defterdeki bakiye ile okunan rakamları karşılaştır: yanlış okunan satırı yakalar. */
-function fotoBakiye(){
-  var f=gorunum.foto, yuruyen=0, ilkHata=-1;
-  f.satirlar.forEach(function(s,i){
-    yuruyen += (s.tur==="satis"?1:-1)*(Number(s.tutar)||0);
-    s.hesap=yuruyen;
-    s.bakiyeHata = (s.bakiye!==null && Math.abs(s.bakiye-yuruyen)>0.5);
-    if(s.bakiyeHata && ilkHata<0) ilkHata=i;
-  });
-  var tutuyor = f.sonBakiye===null ? null : Math.abs(f.sonBakiye-yuruyen)<=0.5;
-  return { hesap:yuruyen, tutuyor:tutuyor, ilkHata:ilkHata };
-}
-function fotoBakiyeHTML(){
-  var f=gorunum.foto, b=fotoBakiye();
-  if(b.tutuyor===null)
-    return '<div class="uyari" style="background:#FAF8F2;border-color:var(--line)">Defterde son bakiye okunamadı. Hesaplanan bakiye: <b>'+para(b.hesap)+'</b>. Rakamları kontrol et.</div>';
-  if(b.tutuyor && b.ilkHata<0)
-    return '<div class="ozet"><b>✓ Bakiye tutuyor.</b> Defterde '+para(f.sonBakiye)+', okunan rakamlardan hesaplanan '+para(b.hesap)+'. Rakamlar doğru okunmuş görünüyor.</div>';
-  return '<div class="uyari"><b>✗ Bakiye tutmuyor.</b> Defterde '+para(f.sonBakiye)+', okunanlardan hesaplanan '+para(b.hesap)+
-    ' (fark '+para(Math.abs((f.sonBakiye||0)-b.hesap))+').'+
-    (b.ilkHata>=0?' İlk tutmayan yer: <b>'+(b.ilkHata+1)+'. satır</b> — kırmızı işaretli.':'')+
-    ' Fotoğrafa bakıp yanlış okunan rakamı düzelt.</div>';
-}
-
-function fotoHTML(){
-  var f=gorunum.foto || (fotoSifirla(), gorunum.foto);
-  var bas='<div class="head"><div><h1>Fotoğraftan Aktar</h1><div class="sub">Defter sayfasının fotoğrafını ver, program okusun; sen kontrol edip kaydet</div></div></div>';
-
-  if(f.durum==="okunuyor"){
-    return bas+'<div class="box"><div class="box-p" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">'+
-      (f.onizleme?'<img src="'+f.onizleme+'" alt="Okunan fotoğraf" style="width:150px;border-radius:10px;border:1px solid var(--line)">':'')+
-      '<div><div style="font-size:17px;font-weight:700">Fotoğraf okunuyor… <span id="fotoSure" style="color:var(--muted);font-weight:600">'+Math.round((Date.now()-(f.basla||Date.now()))/1000)+' sn</span></div>'+
-      '<div id="fotoAsama" style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.55">'+esc(fotoAsamaMetni(f))+'</div></div>'+
-      '</div></div>';
-  }
-
-  if(f.durum==="hazir") return bas+fotoKontrolHTML();
-
-  return bas+
-    (f.basari?'<div class="ozet" style="margin-bottom:18px">'+f.basari+'</div>':'')+
-    (f.hata?'<div class="uyari" style="margin-bottom:18px"><b>Olmadı.</b> '+esc(f.hata)+'</div>':'')+
-    '<div class="box" id="fotoAlan" style="border:2px dashed var(--green-line);background:var(--green-soft)"><div class="box-p" style="text-align:center;padding:40px 20px">'+
-      '<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8l1.4-2h6.6l1.4 2h1.8A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="12.5" r="3.6"/></svg>'+
-      '<div style="font-size:19px;font-weight:700;margin:10px 0 6px">Fotoğrafı buraya bırak ya da <b>Ctrl+V</b> ile yapıştır</div>'+
-      '<div style="font-size:14px;color:var(--muted);margin-bottom:18px">ya da bilgisayardan seç</div>'+
-      '<label class="btn" for="fotoSec" style="cursor:pointer;display:inline-flex;margin:0;color:#fff">Fotoğraf seç</label>'+
-      '<input id="fotoSec" type="file" accept="image/*,.heic,.heif" class="sr">'+
-    '</div></div>'+
-    '<div class="box" style="margin-top:18px"><div class="box-h">Kamerası olmayan bilgisayarda en kolay yol</div><div class="box-p" style="font-size:14px;line-height:1.8">'+
-      '1. Telefonla defter sayfasının fotoğrafını çek (düz ve net, bütün sayfa görünsün)<br>'+
-      '2. WhatsApp\'ta kendine gönder<br>'+
-      '3. Bu bilgisayardaki WhatsApp Web\'de fotoğrafa <b>sağ tık → Resmi kopyala</b><br>'+
-      '4. Buraya gel, <b>Ctrl+V</b><br>'+
-      '<div style="font-size:12px;color:var(--muted);margin-top:10px">Fotoğraf okunmak için Google\'a (Gemini) gönderilir, bilgisayara kaydedilmez. Hiçbir şey sen onaylamadan deftere yazılmaz.</div>'+
-    '</div></div>';
-}
-
-function fotoKontrolHTML(){
-  var f=gorunum.foto, b=fotoBakiye();
-  var mus=veri.musteriler.slice().sort(function(a,c){ return a.ad.localeCompare(c.ad,"tr"); });
-  var hedefAd = f.hedef ? (msAl(f.hedef)||{}).ad : "";
-  var secili=f.satirlar.filter(function(s){ return s.sec; }).length;
-  function sp(k){ return f.supM[k]?' class="supheli"':''; }
-  function rozet(k){ return f.supM[k]?'<span class="rozet-supheli">net değil</span>':''; }
-
-  var musteri='<div class="box"><div class="box-p"><div class="sect">MÜŞTERİ'+(f.sayfaNo?' · Defter No '+esc(f.sayfaNo):'')+'</div>'+
-    '<div class="grid2">'+
-      '<div><label for="fm_ad">Adı soyadı '+rozet("ad")+'</label><input id="fm_ad" data-fm="ad" value="'+esc(f.m.ad)+'"'+sp("ad")+'></div>'+
-      '<div><label for="fm_tc">TC Kimlik No '+rozet("tc")+'</label><input id="fm_tc" data-fm="tc" inputmode="numeric" maxlength="11" value="'+esc(f.m.tc)+'"'+sp("tc")+'>'+
-        '<div id="fm_tc_durum" style="font-size:12px;margin-top:6px;min-height:16px">'+tcDurumHTML(f.m.tc)+'</div></div>'+
-      '<div><label for="fm_tel">Telefon '+rozet("tel")+'</label><input id="fm_tel" data-fm="tel" value="'+esc(f.m.tel)+'"'+sp("tel")+'></div>'+
-      '<div><label for="fm_koy">Köy / adres '+rozet("koy")+'</label><input id="fm_koy" data-fm="koy" value="'+esc(f.m.koy)+'"'+sp("koy")+'></div>'+
-    '</div>'+
-    '<div style="margin-top:14px"><label for="fm_hedef">Satırlar kimin hesabına yazılsın?</label>'+
-      '<select id="fm_hedef"><option value="">Yeni müşteri aç: '+esc(f.m.ad||"(adsız)")+'</option>'+
-      mus.map(function(m){ return '<option value="'+m.id+'"'+(f.hedef===m.id?' selected':'')+'>Kayıtlı: '+esc(m.ad)+(m.koy?' ('+esc(m.koy)+')':'')+'</option>'; }).join("")+
-      '</select>'+
-      (f.hedef?'<div style="font-size:13px;color:var(--green);margin-top:7px;font-weight:600">'+esc(hedefAd)+' zaten kayıtlı — satırlar onun hesabına eklenecek, daha önce girilmiş satırlar atlanacak.</div>':'')+
-    '</div>'+
-    (f.m.not?'<div style="font-size:13px;color:var(--muted);margin-top:12px">Kartın üstündeki not: <b>'+esc(f.m.not)+'</b> (müşteri notlarına eklenecek)</div>':'')+
-  '</div></div>';
-
-  var satir=f.satirlar.map(function(s,i){
-    var kirmizi=function(a){ return s.sup[a]?' supheli':''; };
-    return '<tr'+(s.bakiyeHata?' style="background:var(--red-bg)"':(s.var?' style="opacity:.55"':''))+'>'+
-      '<td style="width:34px"><input type="checkbox" data-fs="'+i+'.sec"'+(s.sec?' checked':'')+' aria-label="'+(i+1)+'. satırı kaydet" style="width:20px;height:20px;min-height:0;padding:0;accent-color:var(--green)"></td>'+
-      '<td style="width:150px"><input type="date" data-fs="'+i+'.tarih" value="'+esc(s.tarih)+'" class="'+kirmizi("tarih")+'" aria-label="Tarih"></td>'+
-      '<td style="width:120px"><select data-fs="'+i+'.tur" aria-label="Tür"><option value="satis"'+(s.tur==="satis"?' selected':'')+'>Satış</option><option value="tahsilat"'+(s.tur==="tahsilat"?' selected':'')+'>Tahsilat</option></select></td>'+
-      '<td>'+(s.tur==="satis"
-        ?'<input data-fs="'+i+'.urun" value="'+esc(s.urun)+'" class="'+kirmizi("urun")+'" aria-label="Ürün" placeholder="Ürün">'
-        :'<select data-fs="'+i+'.yontem" aria-label="Yöntem"><option value="">Yöntem?</option>'+YONTEMLER.map(function(y){ return '<option'+(s.yontem===y?' selected':'')+'>'+y+'</option>'; }).join("")+'</select>')+
-      '</td>'+
-      '<td style="width:105px">'+(s.tur==="satis"?'<input data-fs="'+i+'.miktar" value="'+esc(s.miktar)+'" class="'+kirmizi("miktar")+'" aria-label="Miktar">':'')+'</td>'+
-      '<td style="width:130px"><input data-fs="'+i+'.tutar" type="number" step="0.01" value="'+(s.tutar||"")+'" class="'+kirmizi("tutar")+'" aria-label="Tutar" style="text-align:right"></td>'+
-      '<td class="r" style="width:130px;font-size:13px;white-space:nowrap" id="fb_'+i+'">'+fotoSatirBakiye(s)+'</td>'+
-    '</tr>'+
-    (s.var?'<tr><td></td><td colspan="6" style="font-size:12px;color:var(--muted);border-top:none;padding-top:0">Bu satır zaten kayıtlı, işaretlemezsen tekrar eklenmez.</td></tr>':'');
-  }).join("");
-
-  return musteri+
-    '<div class="box" style="margin-top:18px"><div class="box-h">Okunan satırlar<span style="font-size:13px;font-weight:600;color:var(--muted)">'+f.satirlar.length+' satır'+(f.olcum?' · '+f.olcum.sure+' sn'+(f.olcum.dusunme?' · düşünme '+f.olcum.dusunme:''):'')+'</span></div>'+
-    '<div style="overflow-x:auto"><table style="min-width:860px"><thead><tr><th></th><th>Tarih</th><th>Tür</th><th>Ürün / yöntem</th><th>Miktar</th><th class="r">Tutar</th><th class="r">Bakiye</th></tr></thead><tbody>'+
-    (satir||'<tr><td colspan="7" style="color:var(--muted)">Hiç satır okunamadı.</td></tr>')+'</tbody></table></div>'+
-    '<div class="box-p" id="fotoBakiyeKutu" style="border-top:1px solid var(--line2)">'+fotoBakiyeHTML()+'</div></div>'+
-    (f.onizleme?'<div class="box" style="margin-top:18px"><div class="box-h">Fotoğraf</div><div class="box-p"><img src="'+f.onizleme+'" alt="Aktarılan defter sayfası" style="max-width:100%;border-radius:10px;border:1px solid var(--line)"></div></div>':'')+
-    '<div style="display:flex;gap:11px;margin-top:18px;flex-wrap:wrap;align-items:center">'+
-      '<button class="btn" id="fotoKaydet">✓ Kaydet (<span id="fotoSecSay">'+secili+'</span> satır)</button>'+
-      '<button class="btn btn2" id="fotoVazgec">Vazgeç</button>'+
-      '<span style="font-size:13px;color:var(--muted)">Kırmızı alanlar net okunmadı ya da bakiyeyi bozuyor — fotoğrafla karşılaştır.</span>'+
-    '</div>';
-}
-function fotoSatirBakiye(s){
-  var h=para(s.hesap||0);
-  if(s.bakiye===null) return '<span style="color:var(--muted)">'+h+'</span>';
-  return s.bakiyeHata
-    ? '<span style="color:var(--red);font-weight:700" title="Defterde '+para(s.bakiye)+' yazıyor">'+h+' ✗</span><div style="color:var(--red)">defter: '+para(s.bakiye)+'</div>'
-    : '<span style="color:var(--green);font-weight:700">'+h+' ✓</span>';
-}
-
-/* Kontrol ekranında yazdıkça durumu güncelle (sayfayı yeniden çizmeden). */
-function fotoAlanDegisti(el){
-  var f=gorunum.foto; if(!f||f.durum!=="hazir") return;
-  if(el.dataset.fm){
-    var a=el.dataset.fm, v=el.value;
-    if(a==="tc"){ v=tcTemizle(v).slice(0,11); if(el.value!==v) el.value=v; var d=document.getElementById("fm_tc_durum"); if(d) d.innerHTML=tcDurumHTML(v); }
-    f.m[a]=v; el.classList.remove("supheli"); f.supM[a]=false;
-    return;
-  }
-  var p=String(el.dataset.fs).split("."), i=Number(p[0]), a2=p[1], s=f.satirlar[i]; if(!s) return;
-  if(a2==="sec") s.sec=el.checked;
-  else if(a2==="tutar") s.tutar=fotoSayi(el.value);
-  else s[a2]=el.value;
-  if(a2!=="sec"){ el.classList.remove("supheli"); s.sup[a2]=0; }
-  if(a2==="tur"){ fotoMukerrerIsaretle(); ciz(); return; }
-  if(a2==="tarih"||a2==="tutar"){ var onceki=s.var; fotoMukerrerIsaretle(); if(onceki!==s.var){ ciz(); return; } }
-  fotoBakiye();
-  f.satirlar.forEach(function(x,k){ var c=document.getElementById("fb_"+k); if(c) c.innerHTML=fotoSatirBakiye(x); });
-  var bk=document.getElementById("fotoBakiyeKutu"); if(bk) bk.innerHTML=fotoBakiyeHTML();
-  var say=document.getElementById("fotoSecSay"); if(say) say.textContent=f.satirlar.filter(function(x){ return x.sec; }).length;
-}
-
-function fotoKaydet(){
-  var f=gorunum.foto; if(!f||f.durum!=="hazir") return;
-  var sec=f.satirlar.filter(function(s){ return s.sec; });
-  if(!f.hedef && !String(f.m.ad).trim()){ toast("Müşterinin adını yaz"); var e=document.getElementById("fm_ad"); if(e) e.focus(); return; }
-  for(var i=0;i<sec.length;i++){
-    var s=sec[i], no=f.satirlar.indexOf(s)+1;
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(s.tarih)){ toast(no+". satırın tarihi eksik"); return; }
-    if(!(Number(s.tutar)>0)){ toast(no+". satırın tutarı eksik"); return; }
-    if(s.tur==="satis" && !String(s.urun).trim()){ toast(no+". satırın ürünü eksik"); return; }
-  }
-  var b=fotoBakiye();
-  if(b.tutuyor===false && !confirm("Bakiye defterle tutmuyor (defter "+para(f.sonBakiye)+", hesaplanan "+para(b.hesap)+").\n\nYine de kaydedilsin mi?")) return;
-  if(!sec.length && f.hedef){
-    // Kayıtlı müşteri, eklenecek satır yok: hiçbir şeye dokunma.
-    var adx=(msAl(f.hedef)||{}).ad||"";
-    gorunum.foto={ durum:"bos", basari:'Bu sayfadaki bütün satırlar <b>'+esc(adx)+'</b> hesabında zaten kayıtlı, eklenecek bir şey yok. Sıradaki sayfanın fotoğrafını bırakabilirsin.' };
-    ciz(); return;
-  }
-  if(!sec.length && !confirm("Kaydedilecek satır seçili değil. Sadece müşteri bilgileri kaydedilsin mi?")) return;
-
-  var m;
-  var tc=tcTemizle(f.m.tc);
-  if(f.hedef){
-    m=msAl(f.hedef);
-    // boş olan bilgileri tamamla, dolu olana dokunma
-    if(!m.tc && tc){ if(!tcOnayla(tc,m.id)) return; m.tc=tc; }
-    if(!m.tel && f.m.tel) m.tel=f.m.tel;
-    if(!m.koy && f.m.koy) m.koy=f.m.koy;
-  } else {
-    if(tc && !tcOnayla(tc,null)) return;
-    m={ id:id(), ad:String(f.m.ad).trim(), tel:f.m.tel, tc:tc, koy:f.m.koy, arazi:"", hesapSahibiId:null, iliski:"", notlar:[] };
-    veri.musteriler.push(m);
-  }
-  var vadeli = /vade/i.test(f.m.not||"");
-  sec.forEach(function(s){
-    if(s.tur==="satis") veri.satislar.push({ id:id(), musteriId:m.id, urun:String(s.urun).trim(), miktar:String(s.miktar||"").trim(),
-                                            tarih:s.tarih, tutar:Number(s.tutar), vade:"", vadeNot:vadeli?"Vadeli":"" });
-    else veri.odemeler.push({ id:id(), musteriId:m.id, tutar:Number(s.tutar), tarih:s.tarih, yontem:s.yontem||"", not:"Defterden aktarıldı" });
-  });
-  m.notlar=m.notlar||[];
-  if(sec.length) m.notlar.push({ id:id(), tarih:bugun(), metin:"Defter"+(f.sayfaNo?" No "+f.sayfaNo:"")+" fotoğraftan aktarıldı ("+sec.length+" satır)."+(f.m.not?" Kart notu: "+f.m.not+".":"") });
-  kaydet();
-  var ad=m.ad, mid=m.id;
-  gorunum.foto={ durum:"bos", basari:'<b>'+esc(ad)+'</b> kaydedildi — '+sec.length+' satır eklendi, kalan borç <b>'+para(borc(mid))+'</b>. '+
-    '<button class="btn3" data-ms="'+mid+'">Kartı aç</button> · Sıradaki sayfanın fotoğrafını bırakabilirsin.' };
-  ciz();
-}
-
 /* ============================================================
    EKRANLAR
    ============================================================ */
@@ -1633,7 +1214,6 @@ function ciz(){
   else if(gorunum.ad==="yeni") e.innerHTML=yeniHTML();
   else if(gorunum.ad==="soru") e.innerHTML=soruHTML();
   else if(gorunum.ad==="ayarlar") e.innerHTML=ayarlarHTML();
-  else if(gorunum.ad==="foto") e.innerHTML=fotoHTML();
   e.scrollTop=0;
   if(gorunum.ad==="soru"){ var i=document.getElementById("soruKutu"); if(i) i.value=gorunum.soru; }
   if(ses.aktif||ses.seviyeAcik) seviyeCiz(ses.sonSeviye); // yeniden çizimde seviye çubukları boş kalmasın
@@ -1644,7 +1224,6 @@ function git(ad,mid){
   if(ad!=="yeni"){ gorunum.sesForm=null; }
   gorunum.sesHata="";
   gorunum.duzenle=null;
-  if(ad==="foto" && gorunum.foto && gorunum.foto.durum==="bos"){ gorunum.foto.basari=""; gorunum.foto.hata=""; }
   gorunum.ad=ad; if(mid!==undefined) gorunum.musteriId=mid; ciz();
 }
 
@@ -2265,8 +1844,6 @@ document.addEventListener("click",function(ev){
   else if(ev.target.id==="mikDene") mikrofonDene();
   else if(ev.target.id==="mikDur"){ seviyeKapat(); ciz(); }
   else if(ev.target.id==="duzenleKaydet") duzenleKaydet();
-  else if(ev.target.id==="fotoKaydet" || (ev.target.closest && ev.target.closest("#fotoKaydet"))) fotoKaydet();
-  else if(ev.target.id==="fotoVazgec"){ if(confirm("Okunan bilgiler silinecek. Emin misin?")){ fotoSifirla(); ciz(); } }
   else if(ev.target.id==="duzenleVazgec"){ gorunum.duzenle=null; ciz(); }
   else if(ev.target.id==="guncKur") guncellemeKur();
   else if(ev.target.id==="guncSonra"){ gorunum.guncelleme=null; ciz(); }
@@ -2294,7 +1871,6 @@ function mikrofonDene(){
 }
 
 document.addEventListener("input",function(ev){
-  if(ev.target.dataset && (ev.target.dataset.fm || ev.target.dataset.fs)){ fotoAlanDegisti(ev.target); return; }
   if(ev.target.id==="f_tc"||ev.target.id==="d_tc"){
     var temiz=tcTemizle(ev.target.value).slice(0,11);
     if(ev.target.value!==temiz) ev.target.value=temiz;
@@ -2311,9 +1887,6 @@ document.addEventListener("input",function(ev){
   }
 });
 document.addEventListener("change",function(ev){
-  if(ev.target.dataset && ev.target.dataset.fs){ fotoAlanDegisti(ev.target); return; }
-  if(ev.target.id==="fm_hedef"){ gorunum.foto.hedef=ev.target.value; fotoMukerrerIsaretle(); ciz(); return; }
-  if(ev.target.id==="fotoSec" && ev.target.files && ev.target.files[0]){ fotoBaslat(ev.target.files[0]); ev.target.value=""; return; }
   if(ev.target.id==="koyF"){ gorunum.koy=ev.target.value; ciz(); }
   if(ev.target.id==="dosyaSec" && ev.target.files[0]){ dosyadanYukle(ev.target.files[0]); ev.target.value=""; }
 });
@@ -2585,31 +2158,6 @@ function ornekYukle(){
   kaydet(); git("panel"); toast("Örnek kayıtlar eklendi");
 }
 
-
-/* ---------- fotoğraf: yapıştır ve sürükle-bırak (her ekranda çalışır) ---------- */
-function resimDosyasi(liste){
-  if(!liste) return null;
-  for(var i=0;i<liste.length;i++){ var d=liste[i]; if(d && (/^image\//.test(d.type||"") || /\.(heic|heif)$/i.test(d.name||""))) return d; }
-  return null;
-}
-document.addEventListener("paste",function(ev){
-  var cd=ev.clipboardData; if(!cd) return;
-  var d=resimDosyasi(cd.files);
-  if(!d && cd.items){ for(var i=0;i<cd.items.length;i++){ if(cd.items[i].kind==="file" && /^image\//.test(cd.items[i].type)){ d=cd.items[i].getAsFile(); break; } } }
-  if(!d) return;                       // yazı yapıştırılıyorsa karışma
-  if(gorunum.foto && gorunum.foto.durum==="hazir" && gorunum.ad==="foto" && !confirm("Ekrandaki okunan bilgiler silinip yeni fotoğraf okunsun mu?")) return;
-  ev.preventDefault();
-  fotoBaslat(d);
-});
-document.addEventListener("dragover",function(ev){
-  if(ev.dataTransfer && Array.prototype.indexOf.call(ev.dataTransfer.types||[],"Files")>=0){ ev.preventDefault(); }
-});
-document.addEventListener("drop",function(ev){
-  var d=ev.dataTransfer && resimDosyasi(ev.dataTransfer.files);
-  if(!d) return;
-  ev.preventDefault();
-  fotoBaslat(d);
-});
 
 /* ---------- başlat ---------- */
 function basla(){
