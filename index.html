@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://generativelanguage.googleapis.com">
 <title>MacarZeka — Müşteri Takibi</title>
 
 <!-- Telefonda "Ana Ekrana Ekle" dendiğinde uygulama gibi açılsın -->
@@ -237,6 +237,178 @@
   function nabiz(){ fetch("/api/nabiz",{method:"POST"}).catch(function(){}); }
   nabiz();
   setInterval(nabiz, 3000);
+})();
+
+/* ============================================================
+   ZEKA KÖPRÜSÜ — Gemini ayarları, soru-cevap ve ses.
+   Programda: arka uca gider (window.macar).
+   Tarayıcıda (GitHub Pages): anahtar bu tarayıcıda saklanır,
+   istek doğrudan Google'a gider. Komutlar Go koduyla birebir aynıdır.
+   ============================================================ */
+(function(){
+  if (window.macar && window.macar.sor) {
+    window.zeka = {
+      yer: "program",
+      ayarlar:    function(){  return window.macar.ayarlar(); },
+      ayarKaydet: function(d){ return window.macar.ayarKaydet(d); },
+      sor:        function(d){ return window.macar.sor(d); },
+      dinle:      function(d){ return window.macar.dinle(d); }
+    };
+    return;
+  }
+  var ANAHTAR = "macarzeka_ayar_v1";
+  var UC = "https://generativelanguage.googleapis.com/v1beta";
+  var V_MODEL = "gemini-3.5-flash-lite", V_SES = "gemini-3.8-flash";
+  var Y_SOR = "Sen bir ziraat mühendisinin müşteri defterini okuyan yardımcısısın.\nSana aşağıda o defterin tamamı verilecek; kullanıcının sorusunu YALNIZCA bu defterdeki bilgilere dayanarak cevapla.\n\nKurallar:\n- Türkçe, kısa ve net konuş. Gereksiz giriş cümlesi kurma, doğrudan cevabı ver.\n- Para tutarlarını \"12.500 ₺\" biçiminde yaz.\n- Tarihleri \"08.10.2026\" biçiminde yaz.\n- Defterde olmayan bir şey sorulursa \"Bu bilgi kayıtlarda yok\" de. Asla tahmin etme, uydurma.\n- Birden fazla kişi listelenecekse madde madde yaz.\n- Hesabı başkasının üstüne yazılı müşterilerde bunu mutlaka belirt.\n- Hesap yaparken dikkatli ol: kalan borç = toplam alış - toplam ödeme.\n- Kullanıcı defterde olmayan genel bir şey sorarsa (hava durumu, gübre tavsiyesi gibi)\n  kısaca bunun bu defterle ilgili olmadığını söyle.", Y_METIN = "Sen Türkçe konuşmayı yazıya çeviren bir araçsın.\nDuyduğun konuşmayı olduğu gibi, Türkçe yazım kurallarına uygun yaz.\nSadece yazıya çevrilmiş metni ver; açıklama, başlık, tırnak ekleme.\nKonuşmada anlamadığın bir yer varsa oraya [anlaşılmadı] yaz.\nSes boşsa veya hiç konuşma yoksa yalnızca [ses yok] yaz.", Y_FORM = "Sen bir ziraat mühendisinin sesli notunu müşteri kayıt formuna çeviren araçsın.\nÖnce konuşmayı Türkçe olarak yazıya çevir, sonra içinden form alanlarını çıkar.\n\nÇOK ÖNEMLİ KURALLAR:\n- Yalnızca konuşmada GEÇEN bilgileri doldur. Geçmeyen alanı boş bırak. ASLA tahmin etme, uydurma.\n- Para: \"sekiz bin lira\" -> 8000, \"on iki bin beş yüz\" -> 12500. Sadece sayı yaz, \"₺\" yazma.\n- Tarih: YYYY-AA-GG biçiminde. \"bugün\" -> bugünün tarihi, \"dün\" -> bir önceki gün,\n  \"geçen hafta\" gibi belirsizse boş bırak.\n- Ödeme yöntemi yalnızca şunlardan biri olabilir: Nakit, Havale / EFT, Kredi kartı, Çek, Senet.\n  Konuşmada geçmiyorsa boş bırak.\n- İlişki yalnızca şunlardan biri olabilir: Babası, Oğlu, Kardeşi, Eşi, Ortağı, Kiracısı, Akrabası.\n- \"falancanın hesabına yazılsın\", \"hesap babasının üstüne\" gibi bir ifade geçerse,\n  sana verilen MEVCUT MÜŞTERİLER listesinden o kişiyi bul ve hesapSahibiId alanına\n  o kişinin id'sini yaz. Listede yoksa hesapSahibiId'yi boş bırak, adını hesapSahibiAd'a yaz.\n- Konuşmada geçen ama forma girmeyen her şeyi (tarla durumu, hastalık, söz verilen şeyler)\n  \"not\" alanına yaz.\n- Net duyamadığın, emin olmadığın her alanın adını \"supheli\" listesine ekle. Dürüst ol:\n  emin değilsen mutlaka supheli'ye koy. Bu liste kullanıcının kontrol edeceği alanları gösterir.\n\nCevabını SADECE şu JSON biçiminde ver, başka hiçbir şey yazma, markdown kod bloğu kullanma:\n{\n  \"metin\": \"konuşmanın aynen yazıya çevrilmiş hali\",\n  \"ad\": \"\", \"tel\": \"\", \"koy\": \"\", \"arazi\": \"\",\n  \"urun\": \"\", \"miktar\": \"\", \"tarih\": \"\", \"tutar\": 0,\n  \"odenen\": 0, \"yontem\": \"\", \"odemeTarihi\": \"\", \"vade\": \"\", \"vadeNot\": \"\",\n  \"hesapSahibiId\": \"\", \"hesapSahibiAd\": \"\", \"iliski\": \"\",\n  \"not\": \"\",\n  \"supheli\": []\n}";
+  var EN_BUYUK_SES = 13*1024*1024;
+
+  function oku(){
+    var a={ gemini_anahtar:"", gemini_model:V_MODEL, gemini_ses_model:V_SES, gemini_acik:false, mikrofon_id:"", mikrofon_ad:"" };
+    try{ var h=JSON.parse(localStorage.getItem(ANAHTAR)||"null"); if(h&&typeof h==="object") for(var k in a) if(h[k]!==undefined) a[k]=h[k]; }catch(e){}
+    if(!a.gemini_model) a.gemini_model=V_MODEL;
+    if(!a.gemini_ses_model) a.gemini_ses_model=V_SES;
+    return a;
+  }
+  function yaz(a){ try{ localStorage.setItem(ANAHTAR, JSON.stringify(a)); return true; }catch(e){ return false; } }
+  function maske(k){ k=String(k||"").trim(); if(!k) return ""; return k.length<=4?"••••":"••••••••"+k.slice(-4); }
+  function cevap(a){ return { ok:true, model:a.gemini_model, sesModel:a.gemini_ses_model, acik:!!a.gemini_acik,
+    anahtarVar:!!a.gemini_anahtar, anahtarMaske:maske(a.gemini_anahtar), mikrofonId:a.mikrofon_id||"", mikrofonAd:a.mikrofon_ad||"" }; }
+  function kisalt(s){ s=String(s||"").trim(); return s.length>220?s.slice(0,220)+"…":s; }
+
+  function istek(model, govde, sure){
+    var a=oku(), ak=String(a.gemini_anahtar||"").trim();
+    if(!ak) return Promise.resolve({ hata:"Gemini anahtarı girilmemiş. Ayarlar ekranından anahtarı yapıştır." });
+    var dur = window.AbortController ? new AbortController() : null;
+    var zaman = dur ? setTimeout(function(){ dur.abort(); }, sure) : null;
+    return fetch(UC+"/models/"+encodeURIComponent(model)+":generateContent?key="+encodeURIComponent(ak), {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(govde),
+      signal: dur?dur.signal:undefined
+    }).then(function(r){
+      return r.text().then(function(t){
+        var j={}; try{ j=JSON.parse(t); }catch(e){}
+        return { kod:r.status, j:j };
+      });
+    }).catch(function(e){
+      return { hata: (e && e.name==="AbortError") ? "Google zamanında cevap vermedi. Tekrar dene."
+                                                  : "Google'a bağlanılamadı. İnternet bağlantısını kontrol et." };
+    }).then(function(x){ if(zaman) clearTimeout(zaman); return x; });
+  }
+  function metniAl(j){
+    var b=""; ((j&&j.candidates)||[]).forEach(function(c){ (((c||{}).content||{}).parts||[]).forEach(function(p){ if(p&&p.text) b+=p.text; }); });
+    return b.trim();
+  }
+  function soruHata(kod, m, model){
+    var al=String(m||"").toLowerCase();
+    if(kod===400 && al.indexOf("api key")>=0) return "Anahtar geçersiz görünüyor. Ayarlar'dan tekrar kontrol et.";
+    if(kod===400) return "İstek reddedildi (400). Model adı yanlış olabilir: "+model+". Google'ın mesajı: "+kisalt(m);
+    if(kod===401||kod===403) return "Anahtar kabul edilmedi (yetki hatası). Google AI Studio'dan yeni bir anahtar al ve Ayarlar'a yapıştır.";
+    if(kod===404) return "Model bulunamadı: "+model+". Ayarlar'dan başka bir model seç.";
+    if(kod===429) return "Google kotası doldu (429). Biraz bekleyip tekrar dene; ücretsiz kullanımda dakikalık sınır vardır.";
+    if(kod>=500) return "Google tarafında geçici sorun ("+kod+"). Birazdan tekrar dene.";
+    return "Beklenmeyen cevap ("+kod+"): "+kisalt(m);
+  }
+  function sesHata(kod, m, model){
+    var al=String(m||"").toLowerCase();
+    if(kod===400 && (al.indexOf("audio")>=0||al.indexOf("modalit")>=0||al.indexOf("mime")>=0||al.indexOf("not supported")>=0))
+      return "Seçili ses modeli ("+model+") ses kaydını kabul etmedi. Ayarlar'dan başka bir ses modeli seç. Google'ın mesajı: "+kisalt(m);
+    if(kod===413) return "Kayıt çok uzun geldi. Daha kısa konuşup dene.";
+    return soruHata(kod, m, model).replace("Model bulunamadı","Ses modeli bulunamadı");
+  }
+  function temizMetin(s){
+    s=String(s||"").trim();
+    if(s.indexOf("```")===0){ var i=s.indexOf("\n"); if(i>=0) s=s.slice(i+1); s=s.replace(/```\s*$/,"").trim(); }
+    if(s.length>=2 && s[0]==='"' && s[s.length-1]==='"'){ try{ var c=JSON.parse(s); if(typeof c==="string") s=c; }catch(e){} }
+    return s.trim();
+  }
+  function jsonAyikla(s){
+    s=temizMetin(s); var b=s.indexOf("{"), e=s.lastIndexOf("}");
+    if(b<0||e<=b) return null;
+    try{ var o=JSON.parse(s.slice(b,e+1)); return (o&&typeof o==="object")?o:null; }catch(x){ return null; }
+  }
+  function sesYok(t){ return !t || String(t).toLowerCase().indexOf("[ses yok]")>=0; }
+
+  window.zeka = {
+    yer: "tarayici",
+    ayarlar: function(){ return Promise.resolve(cevap(oku())); },
+    ayarKaydet: function(g){
+      var a=oku(); g=g||{};
+      if(g.anahtar!==undefined) a.gemini_anahtar=String(g.anahtar||"").trim();
+      if(g.model && String(g.model).trim()) a.gemini_model=String(g.model).trim();
+      if(g.sesModel && String(g.sesModel).trim()) a.gemini_ses_model=String(g.sesModel).trim();
+      if(g.acik!==undefined) a.gemini_acik=!!g.acik;
+      if(g.mikrofonId!==undefined) a.mikrofon_id=String(g.mikrofonId||"").trim();
+      if(g.mikrofonAd!==undefined) a.mikrofon_ad=String(g.mikrofonAd||"").trim();
+      if(!a.gemini_anahtar) a.gemini_acik=false;
+      if(!yaz(a)) return Promise.resolve({ ok:false, hata:"Ayarlar tarayıcıya yazılamadı." });
+      return Promise.resolve(cevap(a));
+    },
+    sor: function(g){
+      var a=oku(); g=g||{};
+      if(!g.deneme && !a.gemini_acik) return Promise.resolve({ ok:false, hata:"Gemini kapali" });
+      var model=a.gemini_model||V_MODEL;
+      return istek(model, {
+        system_instruction:{ parts:[{ text:Y_SOR }] },
+        contents:[{ parts:[{ text:"=== MÜŞTERİ DEFTERİ ===\n"+(g.baglam||"")+"\n\n=== SORU ===\n"+(g.soru||"") }] }],
+        generationConfig:{ temperature:0.2, maxOutputTokens:1500 }
+      }, 60000).then(function(x){
+        if(x.hata) return { ok:false, hata:x.hata };
+        var j=x.j||{};
+        if(x.kod!==200) return { ok:false, hata:soruHata(x.kod, (j.error||{}).message, model) };
+        if(j.promptFeedback && j.promptFeedback.blockReason) return { ok:false, hata:"Google bu soruyu yanıtlamadı ("+j.promptFeedback.blockReason+")." };
+        var t=metniAl(j);
+        if(!t){
+          var fr=((j.candidates||[])[0]||{}).finishReason;
+          return { ok:false, hata: fr ? "Boş cevap geldi ("+fr+"). Soruyu biraz farklı yazıp dene." : "Google boş cevap döndürdü. Birazdan tekrar dene." };
+        }
+        return { ok:true, cevap:t, model:model };
+      });
+    },
+    dinle: function(g){
+      var a=oku(); g=g||{};
+      var b64=String(g.ses||""), ham=Math.floor(b64.length*3/4);
+      if(ham>EN_BUYUK_SES) return Promise.resolve({ ok:false, hata:"Kayıt çok uzun ("+Math.round(ham/1048576)+" MB). En fazla 3 dakika konuş, sonra kaydet." });
+      if(ham<1200) return Promise.resolve({ ok:false, hata:"Ses kaydı boş geldi. Mikrofon çalışmıyor olabilir; Ayarlar'dan mikrofonu dene." });
+      var model=a.gemini_ses_model||V_SES, form=(g.amac==="form");
+      var tip=String(g.tip||"audio/webm").split(";")[0].trim()||"audio/webm";
+      var istem=(form?"Bu sesli notu yazıya çevir ve form alanlarını çıkar.":"Bu ses kaydını Türkçe yazıya çevir.")+(g.baglam?"\n\n"+g.baglam:"");
+      function govde(jsonIste){
+        var u={ temperature:0.1, maxOutputTokens:3000 };
+        if(jsonIste) u.response_mime_type="application/json";
+        return { system_instruction:{ parts:[{ text: form?Y_FORM:Y_METIN }] },
+                 contents:[{ parts:[{ text:istem }, { inline_data:{ mime_type:tip, data:b64 } }] }],
+                 generationConfig:u };
+      }
+      function bitir(x){
+        if(x.hata) return { ok:false, hata:x.hata };
+        var j=x.j||{};
+        if(x.kod!==200) return { ok:false, hata:sesHata(x.kod, (j.error||{}).message, model) };
+        if(j.promptFeedback && j.promptFeedback.blockReason) return { ok:false, hata:"Google bu kaydı işlemedi ("+j.promptFeedback.blockReason+")." };
+        var t=metniAl(j);
+        if(!t) return { ok:false, hata:"Google boş cevap döndürdü. Tekrar konuşmayı dene." };
+        if(!form){
+          var m=temizMetin(t);
+          if(sesYok(m)) return { ok:false, hata:"Konuşma duyulmadı. Mikrofona daha yakın ve yüksek sesle konuş." };
+          return { ok:true, metin:m, model:model };
+        }
+        var o=jsonAyikla(t);
+        if(!o){
+          var k=temizMetin(t);
+          if(sesYok(k)) return { ok:false, hata:"Konuşma duyulmadı. Mikrofona daha yakın ve yüksek sesle konuş." };
+          return { ok:true, metin:k, veri:null, model:model };
+        }
+        var mt=temizMetin(o.metin||"");
+        if(sesYok(mt)) return { ok:false, hata:"Konuşma duyulmadı. Mikrofona daha yakın ve yüksek sesle konuş." };
+        return { ok:true, metin:mt, veri:o, model:model };
+      }
+      return istek(model, govde(form), 180000).then(function(x){
+        // Bazı modeller response_mime_type alanını tanımaz: o alan olmadan bir kez daha dene.
+        var m=String(((x.j||{}).error||{}).message||"").toLowerCase();
+        if(form && x.kod===400 && (m.indexOf("response_mime_type")>=0||m.indexOf("responsemimetype")>=0||m.indexOf("unknown name")>=0||m.indexOf("invalid json payload")>=0))
+          return istek(model, govde(false), 180000).then(bitir);
+        return bitir(x);
+      });
+    }
+  };
 })();
 </script>
 <div class="app">
@@ -646,11 +818,11 @@ function sesDestekli(){
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 }
 function sesHazirMi(){
-  return sesDestekli() && MASAUSTU && window.macar.dinle && ayar.anahtarVar;
+  return sesDestekli() && !!window.zeka && ayar.anahtarVar;
 }
 function sesNedenKapali(){
   if(!sesDestekli()) return "Bu pencere mikrofonu desteklemiyor.";
-  if(!MASAUSTU) return "Sesli kayıt masaüstü sürümünde çalışır.";
+  if(!window.zeka) return "Sesli kayıt bu pencerede kullanılamıyor.";
   if(!ayar.anahtarVar) return "Sesli kayıt için Ayarlar'dan Gemini anahtarı girilmeli.";
   return "";
 }
@@ -874,7 +1046,7 @@ function kayitBitti(){
 
   sesIsleniyor(amac, true);
   blobB64(blob).then(function(b64){
-    return window.macar.dinle({ ses:b64, tip:tip, amac:(amac==="form"?"form":"metin"), baglam:sesBaglami(amac) });
+    return window.zeka.dinle({ ses:b64, tip:tip, amac:(amac==="form"?"form":"metin"), baglam:sesBaglami(amac) });
   }).then(function(r){
     sesIsleniyor(amac, false);
     if(!(r && r.ok)){ sesHatasi((r&&r.hata)||"bilinmeyen hata", amac); return; }
@@ -1505,7 +1677,7 @@ function ayarlarHTML(){
     ["gemini-3.6-flash","Alternatif"],
     ["gemini-3.5-flash-lite","Daha hızlı, ses desteği model sürümüne bağlı"]
   ];
-  return '<div class="head"><div><h1>Ayarlar</h1><div class="sub">Sürüm '+esc(SURUM)+'</div></div></div>'+
+  return '<div class="head"><div><h1>Ayarlar</h1><div class="sub">'+(MASAUSTU?'Sürüm '+esc(SURUM):'Web sürümü')+'</div></div></div>'+
   '<div class="cols"><div class="col-main">'+
 
   '<div class="box"><div class="box-h">Soru Sor — Gemini bağlantısı</div><div class="box-p">'+
@@ -1561,6 +1733,7 @@ function ayarlarHTML(){
     '<div id="ayarSonuc" style="margin-top:16px"></div>'+
   '</div></div>'+
 
+(MASAUSTU ? (
   '<div class="box"><div class="box-h">Sürüm ve güncelleme</div><div class="box-p">'+
     '<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">'+
       '<div><div style="font-size:15px;font-weight:600">Kullanılan sürüm: '+esc(SURUM)+'</div>'+
@@ -1575,7 +1748,10 @@ function ayarlarHTML(){
       'Program açılışta günde bir kez yeni sürüm olup olmadığına bakar. Güncelleme sırasında '+
       '<b>veriler.json, ayarlar.json ve yedekler klasörüne dokunulmaz</b>; ayrıca kurulumdan önce kayıtların bir kopyası alınır.'+
     '</div>'+
-  '</div></div>'+
+  '</div></div>'
+) : ('<div class="box"><div class="box-h">Güncelleme</div><div class="box-p" style="font-size:14px;line-height:1.6">'+
+    'Web sürümü kendiliğinden güncellenir: her açılışta en yeni hâli gelir. Bir şey yapmana gerek yok, kayıtların yerinde kalır.'+
+  '</div></div>'))+
 
   '<div class="box"><div class="box-h">Mikrofon</div><div class="box-p">'+
     '<div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:16px">'+
@@ -1617,9 +1793,11 @@ function ayarlarHTML(){
 
   '</div><div class="col-side">'+
     '<div class="box"><div class="box-h">Veri</div><div class="box-p">'+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:6px">Kayıt dosyası</div>'+
-      '<div style="font-size:13px;word-break:break-all;margin-bottom:16px">'+esc(bilgi.dosya||"—")+'</div>'+
-      '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarKlasor">Veri klasörünü aç</button>'+
+      (MASAUSTU
+        ? '<div style="font-size:13px;color:var(--muted);margin-bottom:6px">Kayıt dosyası</div>'+
+          '<div style="font-size:13px;word-break:break-all;margin-bottom:16px">'+esc(bilgi.dosya||"—")+'</div>'+
+          '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarKlasor">Veri klasörünü aç</button>'
+        : '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px">Kayıtlar bu tarayıcıda duruyor. Ayda bir yedek alıp flaşa ya da telefona at.</div>')+
       '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarYedek">Yedek al</button>'+
       '<button class="btn btn2" style="width:100%" id="ayarYedekYukle">Yedekten geri yükle</button>'+
     '</div></div>'+
@@ -1751,7 +1929,7 @@ function sor(){
   var yerel=cevapla(s);
   gorunum.yerel=yerel;
 
-  if(!(ayar.acik && MASAUSTU && window.macar.sor)){
+  if(!(ayar.acik && window.zeka)){
     gorunum.cevap=yerel; ciz(); return;
   }
 
@@ -1762,7 +1940,7 @@ function sor(){
   var istenen=s;
   // TC Kimlik No Google'a gitmesin: soruda geçiyorsa yerine kişinin adını koy.
   var gidecek=String(s).replace(/\b[1-9][0-9]{10}\b/g,function(t){ var k=tcSahibi(t,null); return k?k.ad:"[TC]"; });
-  window.macar.sor({ soru:gidecek, baglam:baglamKur() }).then(function(r){
+  window.zeka.sor({ soru:gidecek, baglam:baglamKur() }).then(function(r){
     if(gorunum.soru!==istenen || gorunum.ad!=="soru") return; // kullanıcı başka şey yaptı
     if(r && r.ok){
       gorunum.cevap={ metin:metinBicimle(r.cevap), gemini:true, model:r.model,
@@ -1852,8 +2030,8 @@ function formKaydet(){
 function ayarSonucYaz(h){ var e=document.getElementById("ayarSonuc"); if(e) e.innerHTML=h; }
 
 function ayarlariGetir(){
-  if(!(MASAUSTU && window.macar.ayarlar)) return Promise.resolve();
-  return window.macar.ayarlar().then(function(r){ ayarYaz(r); }).catch(function(){});
+  if(!window.zeka) return Promise.resolve();
+  return window.zeka.ayarlar().then(function(r){ ayarYaz(r); }).catch(function(){});
 }
 function ayarYaz(r){
   if(!(r && r.ok)) return false;
@@ -1864,7 +2042,7 @@ function ayarYaz(r){
 }
 
 function ayarKaydet(sessiz){
-  if(!(MASAUSTU && window.macar.ayarKaydet)){ toast("Bu bölüm masaüstü sürümünde çalışır."); return Promise.resolve(false); }
+  if(!window.zeka){ toast("Ayarlar kaydedilemedi."); return Promise.resolve(false); }
   var g=document.getElementById("geminiAnahtar");
   var md=document.getElementById("geminiModel");
   var sm=document.getElementById("geminiSesModel");
@@ -1879,7 +2057,7 @@ function ayarKaydet(sessiz){
     ses.mikrofonlar.forEach(function(m){ if(m.id===mk.value) sec=m; });
     paket.mikrofonAd=sec?sec.ad:"";
   }
-  return window.macar.ayarKaydet(paket).then(function(r){
+  return window.zeka.ayarKaydet(paket).then(function(r){
     if(!(r && r.ok)){ ayarSonucYaz('<div class="uyari">Kaydedilemedi: '+esc((r&&r.hata)||"")+'</div>'); return false; }
     ayarYaz(r);
     if(!sessiz){ ciz(); ayarSonucYaz('<div class="ozet">Kaydedildi.'+(ayar.anahtarVar && !ayar.acik ? ' Şimdi "Bağlantıyı dene" ile sınayıp "Aç" diyebilirsin.' : '')+'</div>'); }
@@ -1888,10 +2066,10 @@ function ayarKaydet(sessiz){
 }
 
 function ayarAcKapa(){
-  if(!(MASAUSTU && window.macar.ayarKaydet)) return;
+  if(!window.zeka) return;
   var yeni=!ayar.acik;
   ayarKaydet(true).then(function(){
-    return window.macar.ayarKaydet({acik:yeni});
+    return window.zeka.ayarKaydet({acik:yeni});
   }).then(function(r){
     if(ayarYaz(r)){
       ciz();
@@ -1904,16 +2082,16 @@ function ayarAcKapa(){
 
 function anahtarSil(){
   if(!confirm("Kayıtlı Gemini anahtarı silinecek ve Gemini kapanacak.\n\nDevam edilsin mi?")) return;
-  window.macar.ayarKaydet({anahtar:"", acik:false}).then(function(r){
+  window.zeka.ayarKaydet({anahtar:"", acik:false}).then(function(r){
     if(ayarYaz(r)){ ciz(); ayarSonucYaz('<div class="ozet">Anahtar silindi.</div>'); }
   }).catch(function(e){ ayarSonucYaz('<div class="uyari">Silinemedi: '+esc(e.message)+'</div>'); });
 }
 
 function geminiDene(){
-  if(!(MASAUSTU && window.macar.sor)){ toast("Bu bölüm masaüstü sürümünde çalışır."); return; }
+  if(!window.zeka){ toast("Bağlantı denenemedi."); return; }
   ayarSonucYaz('<div class="ozet">Deneniyor…</div>');
   ayarKaydet(true).then(function(){
-    return window.macar.sor({ deneme:true, soru:"Sadece şu kelimeyi yaz: TAMAM",
+    return window.zeka.sor({ deneme:true, soru:"Sadece şu kelimeyi yaz: TAMAM",
       baglam:"Bu bir bağlantı denemesidir, defter verisi gönderilmedi." });
   }).then(function(r){
     if(r && r.ok){
@@ -2030,6 +2208,11 @@ function basla(){
     var kd=document.getElementById("klasorAc");
     if(kd) kd.style.display="none";
     hafizadanOku(); durumYaz(); ciz();
+    // Gemini/mikrofon ayarlarını da oku (tarayıcıda saklanıyor), sonra ekranı tazele.
+    ayarlariGetir().then(function(){
+      ciz();
+      if(sesDestekli()) mikrofonlariGetir(false).then(function(){ if(gorunum.ad==="ayarlar") ciz(); }).catch(function(){});
+    });
   }
 }
 basla();

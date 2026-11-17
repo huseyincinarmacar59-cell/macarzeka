@@ -135,7 +135,7 @@ app.whenReady().then(async function () {
   const maskeli = await js("String('" + TC2 + " borcu ne kadar').replace(/\\b[1-9][0-9]{10}\\b/g,function(t){ var k=tcSahibi(t,null); return k?k.ad:'[TC]'; })");
   ok("Soru metnindeki TC isme çevriliyor", maskeli.indexOf(TC2) < 0 && maskeli.indexOf("Ahmet Yılmaz") >= 0, maskeli);
   const kaynak = fs.readFileSync(path.join(KOK_DIZIN, "index.html"), "utf8");
-  ok("sor() maskeli metni gönderiyor", kaynak.indexOf("window.macar.sor({ soru:gidecek") >= 0);
+  ok("sor() maskeli metni gönderiyor", kaynak.indexOf("window.zeka.sor({ soru:gidecek") >= 0);
 
   /* 11 — TC'siz eski kayıtlar sorunsuz */
   const mehmet = await js("veri.musteriler.filter(function(m){return m.ad==='Mehmet Yılmaz'})[0].id");
