@@ -57,7 +57,7 @@ Cevabını SADECE şu JSON biçiminde ver, başka hiçbir şey yazma, markdown k
   "supheli": []
 }`
 
-var goruntuIstemci = &http.Client{Timeout: 90 * time.Second}
+var goruntuIstemci = &http.Client{Timeout: 240 * time.Second}
 
 // Gemini'ye defter sayfası fotoğrafını gönderir, yapılandırılmış sonucu döndürür.
 func geminiGoruntu(a Ayarlar, tip, b64, bugun string) (map[string]any, error) {
@@ -117,7 +117,7 @@ func geminiCok(anahtar, model, yonerge, istem, tip, b64 string, jsonIste bool) (
 	uretim := map[string]any{"maxOutputTokens": 16384}
 	if jsonIste {
 		uretim["response_mime_type"] = "application/json"
-		uretim["thinkingConfig"] = map[string]any{"thinkingLevel": "low"}
+		uretim["thinkingConfig"] = map[string]any{"thinkingLevel": "minimal"}
 	}
 	govde, err := json.Marshal(map[string]any{
 		"system_instruction": map[string]any{"parts": []any{map[string]any{"text": yonerge}}},

@@ -296,6 +296,57 @@
                                                   : "Google'a bağlanılamadı. İnternet bağlantısını kontrol et." };
     }).then(function(x){ if(zaman) clearTimeout(zaman); return x; });
   }
+  // Akışlı istek: cevap parça parça gelir, böylece ilerleme gösterilir ve
+  // Google yazmaya devam ettikçe zaman aşımı olmaz (sadece uzun sessizlikte kesilir).
+  function akis(model, govde, ilerle, sessizlik, toplam){
+    var a=oku(), ak=String(a.gemini_anahtar||"").trim();
+    if(!ak) return Promise.resolve({ hata:"Gemini anahtarı girilmemiş. Ayarlar ekranından anahtarı yapıştır." });
+    if(!(window.ReadableStream && window.TextDecoder && window.AbortController)) return istek(model, govde, toplam);
+    var dur=new AbortController(), son=Date.now(), bas=Date.now(), neden="";
+    var saat=setInterval(function(){
+      var n=Date.now();
+      if(n-son>sessizlik){ neden="sessiz"; dur.abort(); }
+      else if(n-bas>toplam){ neden="toplam"; dur.abort(); }
+    },1000);
+    var metin="", bitis="", kullanim=null, engel="";
+    return fetch(UC+"/models/"+encodeURIComponent(model)+":streamGenerateContent?alt=sse&key="+encodeURIComponent(ak), {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(govde), signal:dur.signal
+    }).then(function(r){
+      if(r.status!==200 || !r.body) return r.text().then(function(t){
+        var j={}; try{ j=JSON.parse(t); }catch(e){}
+        if(Array.isArray(j)) j=j[0]||{};
+        return { kod:r.status, j:j };
+      });
+      var okuyucu=r.body.getReader(), coz=new TextDecoder(), tampon="";
+      function isle(satir){
+        satir=satir.trim(); if(satir.indexOf("data:")!==0) return;
+        var j; try{ j=JSON.parse(satir.slice(5)); }catch(e){ return; }
+        if(j.usageMetadata) kullanim=j.usageMetadata;
+        if(j.promptFeedback && j.promptFeedback.blockReason) engel=j.promptFeedback.blockReason;
+        var c=(j.candidates||[])[0]||{};
+        if(c.finishReason) bitis=c.finishReason;
+        (((c.content||{}).parts)||[]).forEach(function(p){ if(p && p.text && !p.thought) metin+=p.text; });
+      }
+      function dongu(){
+        return okuyucu.read().then(function(x){
+          son=Date.now();
+          if(x.done){ tampon.split("\n").forEach(isle); return; }
+          tampon+=coz.decode(x.value,{stream:true});
+          var i; while((i=tampon.indexOf("\n"))>=0){ isle(tampon.slice(0,i)); tampon=tampon.slice(i+1); }
+          if(ilerle) try{ ilerle(metin); }catch(e){}
+          return dongu();
+        });
+      }
+      return dongu().then(function(){
+        var j={ candidates:[{ content:{ parts:[{ text:metin }] }, finishReason:bitis }], usageMetadata:kullanim };
+        if(engel) j.promptFeedback={ blockReason:engel };
+        return { kod:200, j:j };
+      });
+    }).catch(function(e){
+      if(e && e.name==="AbortError") return { hata: neden==="sessiz" ? "Google uzun süre cevap vermedi. Tekrar dene." : "Okuma çok uzun sürdü. Tekrar dene; olmazsa sayfanın yarısını çekip yükle." };
+      return { hata:"Google'a bağlanılamadı. İnternet bağlantısını kontrol et." };
+    }).then(function(x){ clearInterval(saat); return x; });
+  }
   function metniAl(j){
     var b=""; ((j&&j.candidates)||[]).forEach(function(c){ (((c||{}).content||{}).parts||[]).forEach(function(p){ if(p&&p.text) b+=p.text; }); });
     return b.trim();
@@ -343,7 +394,7 @@
         // Gemini 3 varsayılan olarak "çok düşünür": hem yavaşlar hem cevap yarıda kesilir.
         // Düşünmeyi kıs, cevaba bol yer bırak. Model bu alanları tanımazsa yedek istek sade gider.
         var u={ maxOutputTokens:16384 };
-        if(jsonIste){ u.response_mime_type="application/json"; u.thinkingConfig={ thinkingLevel:"low" }; }
+        if(jsonIste){ u.response_mime_type="application/json"; u.thinkingConfig={ thinkingLevel:"minimal" }; }
         return { system_instruction:{ parts:[{ text:Y_GORUNTU }] },
                  contents:[{ parts:[{ text:"Bu müşteri hesap kartını oku. BUGÜNÜN TARİHİ: "+(g.bugun||"") }, { inline_data:{ mime_type:tip, data:b64 } }] }],
                  generationConfig:u };
@@ -359,12 +410,15 @@
           if(bitis==="MAX_TOKENS") return { ok:false, hata:"Google cevabı yarıda kesti. Tekrar dene; olmazsa sayfayı ikiye bölüp ayrı ayrı yükle." };
           return { ok:false, hata:"Fotoğraf okunamadı. Daha net ve düz çekilmiş bir fotoğraf dene." };
         }
-        return { ok:true, veri:o, model:model };
+        var k=j.usageMetadata||{};
+        return { ok:true, veri:o, model:model, olcum:{ sure:Math.round((Date.now()-bas)/1000), dusunme:k.thoughtsTokenCount||0, cevap:k.candidatesTokenCount||0 } };
       }
-      return istek(model, govde(true), 90000).then(function(x){
+      var bas=Date.now();
+      function ilerle(t){ if(g.ilerle) g.ilerle({ yaziyor:t.length>0, satir:(t.match(/"tarih"/g)||[]).length }); }
+      return akis(model, govde(true), ilerle, 60000, 240000).then(function(x){
         var m=String(((x.j||{}).error||{}).message||"").toLowerCase();
         if(x.kod===400 && (m.indexOf("response_mime_type")>=0||m.indexOf("responsemimetype")>=0||m.indexOf("unknown name")>=0||m.indexOf("invalid json payload")>=0||m.indexOf("thinking")>=0))
-          return istek(model, govde(false), 90000).then(bitir);
+          return akis(model, govde(false), ilerle, 60000, 240000).then(bitir);
         return bitir(x);
       });
     },
@@ -1297,16 +1351,27 @@ function fotoBaslat(dosya){
     if(!gorunum.foto || gorunum.foto.no!==no) return null;
     gorunum.foto.onizleme=h.onizleme; ciz();
     window.__fotoBoyut=Math.round(h.b64.length*3/4/1024);
-    return window.zeka.gor({ resim:h.b64, tip:h.tip, bugun:bugun() });
+    return window.zeka.gor({ resim:h.b64, tip:h.tip, bugun:bugun(), ilerle:function(d){
+      var f=gorunum.foto; if(!f || f.no!==no || f.durum!=="okunuyor") return;
+      f.yaziyor=d.yaziyor; f.okunan=d.satir;
+      var el=document.getElementById("fotoAsama"); if(el) el.textContent=fotoAsamaMetni(f);
+    }});
   }).then(function(r){
     if(!gorunum.foto || gorunum.foto.no!==no || gorunum.foto.durum!=="okunuyor") return;
     if(!(r && r.ok)){ gorunum.foto={ durum:"bos", hata:(r&&r.hata)||"Fotoğraf okunamadı." }; ciz(); return; }
     fotoSonucuKur(r.veri||{}, gorunum.foto.onizleme);
+    if(r.olcum) gorunum.foto.olcum=r.olcum;
     ciz();
   }).catch(function(e){
     if(!gorunum.foto || gorunum.foto.no!==no) return;
     gorunum.foto={ durum:"bos", hata:e.message }; ciz();
   });
+}
+
+function fotoAsamaMetni(f){
+  if(f.yaziyor) return "Okunuyor: "+(f.okunan||0)+" satır okundu…";
+  if(f.onizleme) return "Google fotoğrafı inceliyor… (kalabalık sayfada 20-40 saniye sürebilir)";
+  return "Fotoğraf hazırlanıyor…";
 }
 
 function fotoTarih(t){
@@ -1396,7 +1461,7 @@ function fotoHTML(){
     return bas+'<div class="box"><div class="box-p" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">'+
       (f.onizleme?'<img src="'+f.onizleme+'" alt="Okunan fotoğraf" style="width:150px;border-radius:10px;border:1px solid var(--line)">':'')+
       '<div><div style="font-size:17px;font-weight:700">Fotoğraf okunuyor… <span id="fotoSure" style="color:var(--muted);font-weight:600">'+Math.round((Date.now()-(f.basla||Date.now()))/1000)+' sn</span></div>'+
-      '<div style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.55">El yazısı okunuyor, genelde 10-25 saniye sürer. En fazla 90 saniye beklenir.</div></div>'+
+      '<div id="fotoAsama" style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.55">'+esc(fotoAsamaMetni(f))+'</div></div>'+
       '</div></div>';
   }
 
@@ -1464,7 +1529,7 @@ function fotoKontrolHTML(){
   }).join("");
 
   return musteri+
-    '<div class="box" style="margin-top:18px"><div class="box-h">Okunan satırlar<span style="font-size:13px;font-weight:600;color:var(--muted)">'+f.satirlar.length+' satır</span></div>'+
+    '<div class="box" style="margin-top:18px"><div class="box-h">Okunan satırlar<span style="font-size:13px;font-weight:600;color:var(--muted)">'+f.satirlar.length+' satır'+(f.olcum?' · '+f.olcum.sure+' sn'+(f.olcum.dusunme?' · düşünme '+f.olcum.dusunme:''):'')+'</span></div>'+
     '<div style="overflow-x:auto"><table style="min-width:860px"><thead><tr><th></th><th>Tarih</th><th>Tür</th><th>Ürün / yöntem</th><th>Miktar</th><th class="r">Tutar</th><th class="r">Bakiye</th></tr></thead><tbody>'+
     (satir||'<tr><td colspan="7" style="color:var(--muted)">Hiç satır okunamadı.</td></tr>')+'</tbody></table></div>'+
     '<div class="box-p" id="fotoBakiyeKutu" style="border-top:1px solid var(--line2)">'+fotoBakiyeHTML()+'</div></div>'+

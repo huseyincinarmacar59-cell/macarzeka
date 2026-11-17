@@ -38,9 +38,13 @@ function kart(yanlis) {
   };
 }
 
-let mod = "ok", istekler = [], gecikme = 0;
+let mod = "ok", istekler = [], gecikme = 0, akisYolu = false, akisGecikme = 15;
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type" };
-function yaz(kod, o) { return new Response(JSON.stringify(o), { status: kod, headers: Object.assign({ "Content-Type": "application/json" }, CORS) }); }
+let akisIstegi = false;
+function yaz(kod, o) {
+  if (akisIstegi && kod === 200) return new Response("data: " + JSON.stringify(o) + "\r\n\r\n", { status: 200, headers: Object.assign({ "Content-Type": "text/event-stream" }, CORS) });
+  return new Response(JSON.stringify(o), { status: kod, headers: Object.assign({ "Content-Type": "application/json" }, CORS) });
+}
 
 app.on("window-all-closed", function () {});
 
@@ -52,12 +56,26 @@ app.whenReady().then(async function () {
     if (u.hostname === "generativelanguage.googleapis.com") {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
       const g = await req.text(); istekler.push(g);
+      akisIstegi = u.pathname.indexOf(":streamGenerateContent") >= 0;
       if (gecikme) { const d = gecikme; gecikme = 0; await bekle(d);
         return yaz(200, { candidates: [{ content: { parts: [{ text: JSON.stringify(Object.assign(kart(false), { musteri: { ad: "ESKİ CEVAP", tc: "", tel: "", koy: "", not: "" } })) }] }, finishReason: "STOP" }] }); }
       if (mod === "kesik") return yaz(200, { candidates: [{ content: { parts: [{ text: '{"musteri":{"ad":"Osman' }] }, finishReason: "MAX_TOKENS" }] });
       if (mod === "dusunmeyok" && g.indexOf("thinkingConfig") >= 0) return yaz(400, { error: { code: 400, message: "Unknown name \"thinkingConfig\" at 'generation_config'" } });
       if (mod === "403") return yaz(403, { error: { code: 403, message: "API key not valid" } });
-      return yaz(200, { candidates: [{ content: { parts: [{ text: JSON.stringify(kart(mod === "yanlis")) }] }, finishReason: "STOP" }] });
+      const metin = JSON.stringify(kart(mod === "yanlis"));
+      if (u.pathname.indexOf(":streamGenerateContent") >= 0) {
+        akisYolu = true;
+        // Gerçek Google gibi: önce düşünme parçası (thought), sonra metin parça parça
+        const parcalar = [{ candidates: [{ content: { parts: [{ text: "gizli düşünce", thought: true }] } }] }];
+        for (let i = 0; i < metin.length; i += 120) parcalar.push({ candidates: [{ content: { parts: [{ text: metin.slice(i, i + 120) }] } }] });
+        parcalar.push({ candidates: [{ content: { parts: [{ text: "" }] }, finishReason: "STOP" }], usageMetadata: { thoughtsTokenCount: 42, candidatesTokenCount: 900 } });
+        const enc = new TextEncoder();
+        const akis = new ReadableStream({ async start(c) {
+          for (const p of parcalar) { c.enqueue(enc.encode("data: " + JSON.stringify(p) + "\r\n\r\n")); await bekle(akisGecikme); }
+          c.close(); } });
+        return new Response(akis, { status: 200, headers: Object.assign({ "Content-Type": "text/event-stream" }, CORS) });
+      }
+      return yaz(200, { candidates: [{ content: { parts: [{ text: metin }] }, finishReason: "STOP" }] });
     }
     if (u.hostname === "macarzeka.test") {
       if (u.pathname === "/ornek.jpg" && FOTO) return new Response(fs.readFileSync(FOTO), { headers: { "Content-Type": "image/jpeg" } });
@@ -102,6 +120,9 @@ app.whenReady().then(async function () {
   ok("Bekleme ekranında saniye sayacı var", (await js("!!document.getElementById('fotoSure')")));
   for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) !== "hazir"; i++) await bekle(250);
   ok("Okuma bitti, kontrol ekranı açıldı", (await js("gorunum.foto.durum")) === "hazir");
+  ok("Akışlı (parça parça) okuma kullanıldı", akisYolu);
+  ok("Düşünce parçası cevaba karışmadı", (await js("JSON.stringify(gorunum.foto)")).indexOf("gizli düşünce") < 0);
+  ok("Süre ve düşünme bilgisi gösterildi", (await js("document.getElementById('ekran').innerHTML")).indexOf("düşünme 42") >= 0);
 
   const g = JSON.parse(istekler[0] || "{}");
   const parca = ((((g.contents || [])[0] || {}).parts) || []).filter(function (p) { return p.inline_data; })[0];
@@ -109,7 +130,7 @@ app.whenReady().then(async function () {
   ok("Resim küçültülerek gönderildi", parca && parca.inline_data.data.length * 0.75 < Math.max(boyut, 1) * 1.1 + 60000, "gonderilen ~" + Math.round((parca ? parca.inline_data.data.length * 0.75 : 0) / 1024) + " KB");
   ok("Bugünün tarihi gönderildi", JSON.stringify(g).indexOf("BUGÜNÜN TARİHİ") >= 0);
   ok("Kart okuma komutu gönderildi", JSON.stringify(g).indexOf("veresiye") >= 0);
-  ok("Düşünme kısık gönderildi (hız)", g.generationConfig && g.generationConfig.thinkingConfig && g.generationConfig.thinkingConfig.thinkingLevel === "low");
+  ok("Düşünme kısık gönderildi (hız)", g.generationConfig && g.generationConfig.thinkingConfig && g.generationConfig.thinkingConfig.thinkingLevel === "minimal");
   ok("Cevaba bol yer bırakıldı (yarıda kesilmesin)", g.generationConfig && g.generationConfig.maxOutputTokens >= 16000);
   const gen = await js("new Promise(function(c){ var i=new Image(); i.onload=function(){ c(Math.max(i.width,i.height)); }; i.src='data:image/jpeg;base64,'+" + JSON.stringify(parca ? parca.inline_data.data : "") + "; })");
   ok("Gönderilen resim en fazla 1600 px", gen > 0 && gen <= 1600, gen + " px");
@@ -210,6 +231,18 @@ app.whenReady().then(async function () {
   for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) === "okunuyor"; i++) await bekle(250);
   ok("Google hatasında anlaşılır mesaj", (await js("document.getElementById('ekran').innerHTML")).indexOf("Anahtar kabul edilmedi") >= 0);
   ok("Hatada veri bozulmadı", (await js("borc('" + oid + "')")) === 218300);
+
+  /* 9a — okurken canlı satır sayısı */
+  mod = "ok"; akisGecikme = 150;
+  await js("git('foto'); fotoBaslat(window.__dosya); 0;");
+  let goruldu = "";
+  for (let i = 0; i < 60 && (await js("gorunum.foto.durum")) === "okunuyor"; i++) {
+    const t = await js("(document.getElementById('fotoAsama')||{}).textContent||''");
+    if (/Okunuyor: [1-9]\d* satır/.test(t)) goruldu = t;
+    await bekle(100);
+  }
+  akisGecikme = 15;
+  ok("Okurken 'N satır okundu' canlı gösterildi", !!goruldu, goruldu);
 
   /* 9b — cevap yarıda kesildi */
   mod = "kesik";
