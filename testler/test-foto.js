@@ -54,6 +54,8 @@ app.whenReady().then(async function () {
       const g = await req.text(); istekler.push(g);
       if (gecikme) { const d = gecikme; gecikme = 0; await bekle(d);
         return yaz(200, { candidates: [{ content: { parts: [{ text: JSON.stringify(Object.assign(kart(false), { musteri: { ad: "ESKİ CEVAP", tc: "", tel: "", koy: "", not: "" } })) }] }, finishReason: "STOP" }] }); }
+      if (mod === "kesik") return yaz(200, { candidates: [{ content: { parts: [{ text: '{"musteri":{"ad":"Osman' }] }, finishReason: "MAX_TOKENS" }] });
+      if (mod === "dusunmeyok" && g.indexOf("thinkingConfig") >= 0) return yaz(400, { error: { code: 400, message: "Unknown name \"thinkingConfig\" at 'generation_config'" } });
       if (mod === "403") return yaz(403, { error: { code: 403, message: "API key not valid" } });
       return yaz(200, { candidates: [{ content: { parts: [{ text: JSON.stringify(kart(mod === "yanlis")) }] }, finishReason: "STOP" }] });
     }
@@ -97,6 +99,7 @@ app.whenReady().then(async function () {
   /* 2 — fotoğrafı oku */
   await js("fotoBaslat(window.__dosya); 0;"); await bekle(150);
   ok("Okunurken bekleme ekranı", (await js("document.getElementById('ekran').innerHTML")).indexOf("okunuyor") >= 0);
+  ok("Bekleme ekranında saniye sayacı var", (await js("!!document.getElementById('fotoSure')")));
   for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) !== "hazir"; i++) await bekle(250);
   ok("Okuma bitti, kontrol ekranı açıldı", (await js("gorunum.foto.durum")) === "hazir");
 
@@ -106,6 +109,10 @@ app.whenReady().then(async function () {
   ok("Resim küçültülerek gönderildi", parca && parca.inline_data.data.length * 0.75 < Math.max(boyut, 1) * 1.1 + 60000, "gonderilen ~" + Math.round((parca ? parca.inline_data.data.length * 0.75 : 0) / 1024) + " KB");
   ok("Bugünün tarihi gönderildi", JSON.stringify(g).indexOf("BUGÜNÜN TARİHİ") >= 0);
   ok("Kart okuma komutu gönderildi", JSON.stringify(g).indexOf("veresiye") >= 0);
+  ok("Düşünme kısık gönderildi (hız)", g.generationConfig && g.generationConfig.thinkingConfig && g.generationConfig.thinkingConfig.thinkingLevel === "low");
+  ok("Cevaba bol yer bırakıldı (yarıda kesilmesin)", g.generationConfig && g.generationConfig.maxOutputTokens >= 16000);
+  const gen = await js("new Promise(function(c){ var i=new Image(); i.onload=function(){ c(Math.max(i.width,i.height)); }; i.src='data:image/jpeg;base64,'+" + JSON.stringify(parca ? parca.inline_data.data : "") + "; })");
+  ok("Gönderilen resim en fazla 1600 px", gen > 0 && gen <= 1600, gen + " px");
 
   let h = await js("document.getElementById('ekran').innerHTML");
   ok("Ad okundu", (await js("document.getElementById('fm_ad').value")) === "Osman Dinler");
@@ -203,6 +210,19 @@ app.whenReady().then(async function () {
   for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) === "okunuyor"; i++) await bekle(250);
   ok("Google hatasında anlaşılır mesaj", (await js("document.getElementById('ekran').innerHTML")).indexOf("Anahtar kabul edilmedi") >= 0);
   ok("Hatada veri bozulmadı", (await js("borc('" + oid + "')")) === 218300);
+
+  /* 9b — cevap yarıda kesildi */
+  mod = "kesik";
+  await js("git('foto'); fotoBaslat(window.__dosya); 0;");
+  for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) === "okunuyor"; i++) await bekle(250);
+  ok("Yarıda kesilen cevapta anlaşılır mesaj", (await js("document.getElementById('ekran').innerHTML")).indexOf("yarıda kesti") >= 0);
+
+  /* 9c — model düşünme ayarını tanımıyor: sade istekle yeniden dener */
+  mod = "dusunmeyok"; istekler.length = 0;
+  await js("git('foto'); fotoBaslat(window.__dosya); 0;");
+  for (let i = 0; i < 40 && (await js("gorunum.foto.durum")) === "okunuyor"; i++) await bekle(250);
+  ok("Düşünme ayarı reddedilince sade istekle okudu", (await js("gorunum.foto.durum")) === "hazir" && istekler.length === 2 && istekler[1].indexOf("thinkingConfig") < 0, istekler.length + " istek");
+  mod = "ok"; await js("fotoSifirla(); ciz(); 0;");
 
   /* 10 — resim olmayan dosya */
   await js("fotoBaslat(new File(['merhaba'],'not.txt',{type:'text/plain'})); 0;"); await bekle(400);

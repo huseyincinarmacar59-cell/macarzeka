@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 /* ============================================================
@@ -56,6 +57,8 @@ Cevabını SADECE şu JSON biçiminde ver, başka hiçbir şey yazma, markdown k
   "supheli": []
 }`
 
+var goruntuIstemci = &http.Client{Timeout: 90 * time.Second}
+
 // Gemini'ye defter sayfası fotoğrafını gönderir, yapılandırılmış sonucu döndürür.
 func geminiGoruntu(a Ayarlar, tip, b64, bugun string) (map[string]any, error) {
 	anahtar := strings.TrimSpace(a.GeminiAnahtar)
@@ -86,11 +89,14 @@ func geminiGoruntu(a Ayarlar, tip, b64, bugun string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if kod == 400 && sesAlanHatasi(mesaj) {
+	if kod == 400 && (sesAlanHatasi(mesaj) || strings.Contains(strings.ToLower(mesaj), "thinking")) {
 		cevap, kod, mesaj, err = geminiCok(anahtar, model, goruntuYonerge, istem, tip, b64, false)
 		if err != nil {
 			return nil, err
 		}
+	}
+	if kod == -2 {
+		return nil, fmt.Errorf("Google cevabı yarıda kesti. Tekrar dene; olmazsa sayfayı ikiye bölüp ayrı ayrı yükle.")
 	}
 	if kod != 200 {
 		e := sesHataCevir(kod, mesaj, model)
@@ -106,9 +112,12 @@ func geminiGoruntu(a Ayarlar, tip, b64, bugun string) (map[string]any, error) {
 // Metin + tek bir dosya (ses ya da görüntü) gönderen genel çağrı.
 // Döndürür: modelin metni, HTTP kodu (bloklanırsa -1), Google'ın hata mesajı.
 func geminiCok(anahtar, model, yonerge, istem, tip, b64 string, jsonIste bool) (string, int, string, error) {
-	uretim := map[string]any{"temperature": 0.1, "maxOutputTokens": 4000}
+	// Gemini 3 varsayılan olarak çok düşünür: yavaşlar ve cevap yarıda kesilir.
+	// Düşünmeyi kıs, cevaba bol yer bırak. Sade (yedek) istekte bu alanlar gitmez.
+	uretim := map[string]any{"maxOutputTokens": 16384}
 	if jsonIste {
 		uretim["response_mime_type"] = "application/json"
+		uretim["thinkingConfig"] = map[string]any{"thinkingLevel": "low"}
 	}
 	govde, err := json.Marshal(map[string]any{
 		"system_instruction": map[string]any{"parts": []any{map[string]any{"text": yonerge}}},
@@ -127,7 +136,7 @@ func geminiCok(anahtar, model, yonerge, istem, tip, b64 string, jsonIste bool) (
 		return "", 0, "", fmt.Errorf("istek kurulamadı: %v", err)
 	}
 	istek.Header.Set("Content-Type", "application/json")
-	yanit, err := sesIstemci.Do(istek)
+	yanit, err := goruntuIstemci.Do(istek)
 	if err != nil {
 		return "", 0, "", fmt.Errorf("Google'a bağlanılamadı. İnternet bağlantısını kontrol et.")
 	}
@@ -150,5 +159,9 @@ func geminiCok(anahtar, model, yonerge, istem, tip, b64 string, jsonIste bool) (
 			b.WriteString(p.Text)
 		}
 	}
-	return strings.TrimSpace(b.String()), 200, "", nil
+	metin := strings.TrimSpace(b.String())
+	if len(y.Candidates) > 0 && y.Candidates[0].FinishReason == "MAX_TOKENS" && !strings.HasSuffix(metin, "}") {
+		return "", -2, "MAX_TOKENS", nil
+	}
+	return metin, 200, "", nil
 }

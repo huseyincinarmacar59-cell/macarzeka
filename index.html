@@ -340,7 +340,10 @@
       var model=a.gemini_ses_model||V_SES;
       var tip=String(g.tip||"image/jpeg").split(";")[0].trim(); if(tip.indexOf("image/")!==0) tip="image/jpeg";
       function govde(jsonIste){
-        var u={ temperature:0.1, maxOutputTokens:4000 }; if(jsonIste) u.response_mime_type="application/json";
+        // Gemini 3 varsayılan olarak "çok düşünür": hem yavaşlar hem cevap yarıda kesilir.
+        // Düşünmeyi kıs, cevaba bol yer bırak. Model bu alanları tanımazsa yedek istek sade gider.
+        var u={ maxOutputTokens:16384 };
+        if(jsonIste){ u.response_mime_type="application/json"; u.thinkingConfig={ thinkingLevel:"low" }; }
         return { system_instruction:{ parts:[{ text:Y_GORUNTU }] },
                  contents:[{ parts:[{ text:"Bu müşteri hesap kartını oku. BUGÜNÜN TARİHİ: "+(g.bugun||"") }, { inline_data:{ mime_type:tip, data:b64 } }] }],
                  generationConfig:u };
@@ -351,13 +354,17 @@
         if(x.kod!==200) return { ok:false, hata:sesHata(x.kod,(j.error||{}).message,model).replace("ses kaydını","fotoğrafı") };
         if(j.promptFeedback && j.promptFeedback.blockReason) return { ok:false, hata:"Google bu fotoğrafı işlemedi ("+j.promptFeedback.blockReason+")." };
         var o=jsonAyikla(metniAl(j));
-        if(!o) return { ok:false, hata:"Fotoğraf okunamadı. Daha net ve düz çekilmiş bir fotoğraf dene." };
+        if(!o){
+          var bitis=String((((j.candidates||[])[0])||{}).finishReason||"");
+          if(bitis==="MAX_TOKENS") return { ok:false, hata:"Google cevabı yarıda kesti. Tekrar dene; olmazsa sayfayı ikiye bölüp ayrı ayrı yükle." };
+          return { ok:false, hata:"Fotoğraf okunamadı. Daha net ve düz çekilmiş bir fotoğraf dene." };
+        }
         return { ok:true, veri:o, model:model };
       }
-      return istek(model, govde(true), 180000).then(function(x){
+      return istek(model, govde(true), 90000).then(function(x){
         var m=String(((x.j||{}).error||{}).message||"").toLowerCase();
-        if(x.kod===400 && (m.indexOf("response_mime_type")>=0||m.indexOf("responsemimetype")>=0||m.indexOf("unknown name")>=0||m.indexOf("invalid json payload")>=0))
-          return istek(model, govde(false), 180000).then(bitir);
+        if(x.kod===400 && (m.indexOf("response_mime_type")>=0||m.indexOf("responsemimetype")>=0||m.indexOf("unknown name")>=0||m.indexOf("invalid json payload")>=0||m.indexOf("thinking")>=0))
+          return istek(model, govde(false), 90000).then(bitir);
         return bitir(x);
       });
     },
@@ -1263,7 +1270,7 @@ function fotoHazirla(dosya){
         c.getContext("2d").drawImage(bm,0,0,c.width,c.height);
         return c.toDataURL("image/jpeg", kalite);
       }
-      var buyuk=ciz(2200,0.88), kucuk=ciz(420,0.7);
+      var buyuk=ciz(1600,0.85), kucuk=ciz(420,0.7);
       if(bm.close) bm.close();
       coz({ b64:buyuk.slice(buyuk.indexOf(",")+1), tip:"image/jpeg", onizleme:kucuk });
     }).catch(function(){
@@ -1279,10 +1286,17 @@ function fotoBaslat(dosya){
   if(!ayar.anahtarVar){ gorunum.ad="foto"; gorunum.foto={ durum:"bos", hata:"Fotoğraf okumak için önce Ayarlar'dan Gemini anahtarını gir." }; ciz(); return; }
   gorunum.ad="foto";
   var no = (window.__fotoNo = (window.__fotoNo||0) + 1);   // eski okumaların cevabını yok saymak için
-  gorunum.foto={ durum:"okunuyor", no:no }; ciz();
+  gorunum.foto={ durum:"okunuyor", no:no, basla:Date.now() }; ciz();
+  clearInterval(window.__fotoSaat);
+  window.__fotoSaat=setInterval(function(){
+    var f=gorunum.foto, el=document.getElementById("fotoSure");
+    if(!f || f.no!==no || f.durum!=="okunuyor"){ clearInterval(window.__fotoSaat); return; }
+    if(el) el.textContent=Math.round((Date.now()-f.basla)/1000)+" sn";
+  },1000);
   fotoHazirla(dosya).then(function(h){
     if(!gorunum.foto || gorunum.foto.no!==no) return null;
     gorunum.foto.onizleme=h.onizleme; ciz();
+    window.__fotoBoyut=Math.round(h.b64.length*3/4/1024);
     return window.zeka.gor({ resim:h.b64, tip:h.tip, bugun:bugun() });
   }).then(function(r){
     if(!gorunum.foto || gorunum.foto.no!==no || gorunum.foto.durum!=="okunuyor") return;
@@ -1381,8 +1395,8 @@ function fotoHTML(){
   if(f.durum==="okunuyor"){
     return bas+'<div class="box"><div class="box-p" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">'+
       (f.onizleme?'<img src="'+f.onizleme+'" alt="Okunan fotoğraf" style="width:150px;border-radius:10px;border:1px solid var(--line)">':'')+
-      '<div><div style="font-size:17px;font-weight:700">Fotoğraf okunuyor…</div>'+
-      '<div style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.55">El yazısı okunuyor, 10-30 saniye sürebilir.</div></div>'+
+      '<div><div style="font-size:17px;font-weight:700">Fotoğraf okunuyor… <span id="fotoSure" style="color:var(--muted);font-weight:600">'+Math.round((Date.now()-(f.basla||Date.now()))/1000)+' sn</span></div>'+
+      '<div style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.55">El yazısı okunuyor, genelde 10-25 saniye sürer. En fazla 90 saniye beklenir.</div></div>'+
       '</div></div>';
   }
 
