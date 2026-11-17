@@ -445,6 +445,8 @@ function dosyadanYukle(dosya){
 
 /* ---------- SORU SOR ---------- */
 function musteriBul(s){
+  var tcler=String(s).match(/\b[1-9][0-9]{10}\b/g);
+  if(tcler){ for(var q=0;q<tcler.length;q++){ var bt=tcSahibi(tcler[q],null); if(bt) return bt; } }
   var n=norm(s), bulunan=null, enUzun=0;
   veri.musteriler.forEach(function(m){
     var a=norm(m.ad);
@@ -475,6 +477,31 @@ function kisiOzeti(m){
   return c;
 }
 /* Defterin tamamını Gemini'ye gönderilecek düz metne çevirir. */
+/* ---------- TC Kimlik No ---------- */
+function tcTemizle(v){ return String(v==null?"":v).replace(/\D/g,""); }
+// Resmî algoritma: 11 hane, ilk hane 0 değil, 10. ve 11. haneler denetim hanesi.
+function tcGecerli(v){
+  var t=tcTemizle(v);
+  if(!/^[1-9][0-9]{10}$/.test(t)) return false;
+  var d=t.split("").map(Number);
+  var tek=d[0]+d[2]+d[4]+d[6]+d[8], cift=d[1]+d[3]+d[5]+d[7];
+  if(((tek*7-cift)%10+10)%10!==d[9]) return false;
+  var top=0; for(var i=0;i<10;i++) top+=d[i];
+  return top%10===d[10];
+}
+function tcSahibi(t, haric){
+  t=tcTemizle(t); if(!t) return null;
+  return veri.musteriler.filter(function(m){ return m.id!==haric && tcTemizle(m.tc)===t; })[0]||null;
+}
+function tcDurumHTML(v){
+  var t=tcTemizle(v);
+  if(!t) return "";
+  if(t.length<11) return '<span style="color:var(--muted)">'+t.length+'/11 hane</span>';
+  return tcGecerli(t) ? '<span style="color:var(--green);font-weight:600">✓ Geçerli TC</span>'
+                      : '<span style="color:var(--red);font-weight:600">✗ Hatalı TC — rakamları kontrol et</span>';
+}
+
+/* Not: TC Kimlik No Gemini'ye giden deftere bilerek KONMAZ. */
 function baglamKur(){
   var s=[];
   s.push("BUGÜNÜN TARİHİ: "+trTarih(bugun()));
@@ -1024,6 +1051,7 @@ function git(ad,mid){
   seviyeKapat();
   if(ad!=="yeni"){ gorunum.sesForm=null; }
   gorunum.sesHata="";
+  gorunum.duzenle=null;
   gorunum.ad=ad; if(mid!==undefined) gorunum.musteriId=mid; ciz();
 }
 
@@ -1176,7 +1204,9 @@ function listeHTML(){
     }
     if(ara){
       var h=msAl(m.hesapSahibiId)||{};
-      if(norm(m.ad+" "+(m.tel||"")+" "+(m.koy||"")+" "+(m.arazi||"")+" "+(h.ad||"")).indexOf(ara)<0) return false;
+      var araTc=tcTemizle(gorunum.arama);
+      var tcEs = araTc.length>=4 && tcTemizle(m.tc).indexOf(araTc)>=0;
+      if(!tcEs && norm(m.ad+" "+(m.tel||"")+" "+(m.koy||"")+" "+(m.arazi||"")+" "+(h.ad||"")).indexOf(ara)<0) return false;
     }
     return true;
   }).sort(function(a,b){ return borc(b.id)-borc(a.id) || a.ad.localeCompare(b.ad,"tr"); });
@@ -1186,7 +1216,7 @@ function listeHTML(){
     '<button class="btn" data-git="yeni">+ Yeni Kayıt</button></div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">'+
       '<label for="ara" class="sr">Listede ara</label>'+
-      '<input id="ara" type="search" placeholder="İsim, köy, telefon veya hesap sahibi…" value="'+esc(gorunum.arama)+'" style="flex:1 1 260px;min-width:0">'+
+      '<input id="ara" type="search" placeholder="İsim, köy, telefon, TC veya hesap sahibi…" value="'+esc(gorunum.arama)+'" style="flex:1 1 260px;min-width:0">'+
       '<button class="pill'+(gorunum.filtre==="hepsi"?" on":"")+'" data-f="hepsi">Hepsi</button>'+
       '<button class="pill'+(gorunum.filtre==="borclu"?" on":"")+'" data-f="borclu">Borçlular</button>'+
       '<button class="pill'+(gorunum.filtre==="gecikmis"?" on":"")+'" data-f="gecikmis">Vadesi geçmiş</button>'+
@@ -1213,6 +1243,29 @@ function listeHTML(){
     '</div></div>';
 }
 
+function duzenleHTML(m){
+  return '<div class="box" style="margin-bottom:18px;border-color:var(--green-line)"><div class="box-p">'+
+    '<div class="sect">BİLGİLERİ DÜZENLE</div><div class="grid2">'+
+      '<div><label for="d_ad">Adı soyadı *</label><input id="d_ad" value="'+esc(m.ad)+'"></div>'+
+      '<div><label for="d_tel">Telefon</label><input id="d_tel" value="'+esc(m.tel||"")+'"></div>'+
+      '<div><label for="d_tc">TC Kimlik No</label><input id="d_tc" inputmode="numeric" maxlength="11" autocomplete="off" value="'+esc(m.tc||"")+'">'+
+        '<div id="d_tc_durum" style="font-size:12px;margin-top:6px;min-height:16px">'+tcDurumHTML(m.tc)+'</div></div>'+
+      '<div><label for="d_koy">Köy / İlçe</label><input id="d_koy" value="'+esc(m.koy||"")+'"></div>'+
+      '<div><label for="d_arazi">Arazi / ürün</label><input id="d_arazi" value="'+esc(m.arazi||"")+'"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px"><button class="btn" id="duzenleKaydet">Kaydet</button>'+
+    '<button class="btn btn2" id="duzenleVazgec">Vazgeç</button></div>'+
+  '</div></div>';
+}
+function duzenleKaydet(){
+  var m=msAl(gorunum.musteriId); if(!m) return;
+  var ad=deger("d_ad");
+  if(!ad){ toast("Ad boş olamaz"); return; }
+  var tc=tcTemizle(deger("d_tc"));
+  if(tc!==tcTemizle(m.tc) && !tcOnayla(tc, m.id)) return;
+  m.ad=ad; m.tel=deger("d_tel"); m.tc=tc; m.koy=deger("d_koy"); m.arazi=deger("d_arazi");
+  gorunum.duzenle=null; kaydet(); ciz(); toast("Bilgiler güncellendi");
+}
 function kartHTML(){
   var m=msAl(gorunum.musteriId);
   if(!m) return '<div class="bos"><h3>Kayıt bulunamadı</h3><button class="btn" data-git="musteriler">Listeye dön</button></div>';
@@ -1223,14 +1276,19 @@ function kartHTML(){
       '<div style="display:flex;align-items:center;gap:14px;min-width:0">'+
         '<div class="ava" style="width:54px;height:54px;border-radius:16px;font-size:18px">'+esc(bashar(m.ad))+'</div>'+
         '<div style="min-width:0"><div style="font-size:24px;font-weight:600;letter-spacing:-.3px">'+esc(m.ad)+'</div>'+
-        '<div style="font-size:14px;color:var(--muted);margin-top:3px">'+[m.koy,m.tel,m.arazi].filter(Boolean).map(esc).join(" · ")+'</div></div>'+
+        '<div style="font-size:14px;color:var(--muted);margin-top:3px">'+[m.koy,m.tel,m.arazi].filter(Boolean).map(esc).join(" · ")+'</div>'+
+        (m.tc?'<div style="font-size:14px;color:var(--muted);margin-top:3px">TC: <span style="font-variant-numeric:tabular-nums;color:var(--ink)">'+esc(m.tc)+'</span>'+
+          (tcGecerli(m.tc)?'':' <span style="color:var(--red);font-weight:600">(hatalı)</span>')+'</div>':'')+
+        '</div>'+
       '</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<button class="btn btn2" data-duzenle="'+m.id+'">Bilgileri düzenle</button>'+
         '<button class="btn btn2" data-ekle="odeme">Ödeme Gir</button>'+
         '<button class="btn" data-ekle="satis">Satış Gir</button>'+
         '<button class="btn btn2 btn-dan" data-sil-ms="'+m.id+'">Sil</button>'+
       '</div>'+
     '</div>'+
+    (gorunum.duzenle===m.id ? duzenleHTML(m) : '')+
     '<div class="ozet" style="margin-bottom:18px">'+kisiOzeti(m)+'</div>'+
     '<div class="cols">'+
       '<div class="col-main">'+
@@ -1293,6 +1351,8 @@ function yeniHTML(){
     ('<div class="box"><div class="box-p"><div class="sect">1 · KİŞİ</div><div class="grid2">'+
       '<div><label for="f_ad">Adı soyadı *</label><input id="f_ad" placeholder="Ahmet Yılmaz"></div>'+
       '<div><label for="f_tel">Telefon</label><input id="f_tel" placeholder="0532 000 00 00"></div>'+
+      '<div><label for="f_tc">TC Kimlik No</label><input id="f_tc" inputmode="numeric" maxlength="11" autocomplete="off" placeholder="11 haneli">'+
+        '<div id="f_tc_durum" style="font-size:12px;margin-top:6px;min-height:16px"></div></div>'+
       '<div><label for="f_koy">Köy / İlçe</label><input id="f_koy" placeholder="Karaağaç"></div>'+
       '<div><label for="f_arazi">Arazi / ürün</label><input id="f_arazi" placeholder="40 dönüm buğday"></div>'+
     '</div></div></div>')
@@ -1570,8 +1630,9 @@ function ayarlarHTML(){
    OLAYLAR
    ============================================================ */
 document.addEventListener("click",function(ev){
-  var t=ev.target.closest?ev.target.closest("[data-git],[data-ms],[data-f],[data-mod],[data-sor],[data-ekle],[data-sil-s],[data-sil-o],[data-sil-n],[data-sil-ms],[data-od],[data-kayit]"):null;
+  var t=ev.target.closest?ev.target.closest("[data-git],[data-ms],[data-f],[data-mod],[data-sor],[data-ekle],[data-sil-s],[data-sil-o],[data-sil-n],[data-sil-ms],[data-od],[data-kayit],[data-duzenle]"):null;
   if(t){
+    if(t.dataset.duzenle){ gorunum.duzenle=t.dataset.duzenle; ciz(); var e=document.getElementById("d_tc"); if(e) e.focus(); return; }
     if(t.dataset.kayit){ kayitBaslat(t.dataset.kayit, t.dataset.kayit==="not"?"yeniNot":null); return; }
     if(t.dataset.git){ git(t.dataset.git); return; }
     if(t.dataset.ms){ git("musteri", t.dataset.ms); return; }
@@ -1615,6 +1676,8 @@ document.addEventListener("click",function(ev){
   else if(ev.target.id==="mikYenile") mikrofonYenile();
   else if(ev.target.id==="mikDene") mikrofonDene();
   else if(ev.target.id==="mikDur"){ seviyeKapat(); ciz(); }
+  else if(ev.target.id==="duzenleKaydet") duzenleKaydet();
+  else if(ev.target.id==="duzenleVazgec"){ gorunum.duzenle=null; ciz(); }
   else if(ev.target.id==="guncKur") guncellemeKur();
   else if(ev.target.id==="guncSonra"){ gorunum.guncelleme=null; ciz(); }
   else if(ev.target.id==="guncKapat"){ gorunum.guncellemeHata=""; ciz(); }
@@ -1641,6 +1704,13 @@ function mikrofonDene(){
 }
 
 document.addEventListener("input",function(ev){
+  if(ev.target.id==="f_tc"||ev.target.id==="d_tc"){
+    var temiz=tcTemizle(ev.target.value).slice(0,11);
+    if(ev.target.value!==temiz) ev.target.value=temiz;
+    var dz=document.getElementById(ev.target.id+"_durum");
+    if(dz) dz.innerHTML=tcDurumHTML(temiz);
+    return;
+  }
   if(ev.target.id==="ara"){
     gorunum.arama=ev.target.value;
     var p=ev.target.selectionStart;
@@ -1690,7 +1760,9 @@ function sor(){
   ciz();
 
   var istenen=s;
-  window.macar.sor({ soru:s, baglam:baglamKur() }).then(function(r){
+  // TC Kimlik No Google'a gitmesin: soruda geçiyorsa yerine kişinin adını koy.
+  var gidecek=String(s).replace(/\b[1-9][0-9]{10}\b/g,function(t){ var k=tcSahibi(t,null); return k?k.ad:"[TC]"; });
+  window.macar.sor({ soru:gidecek, baglam:baglamKur() }).then(function(r){
     if(gorunum.soru!==istenen || gorunum.ad!=="soru") return; // kullanıcı başka şey yaptı
     if(r && r.ok){
       gorunum.cevap={ metin:metinBicimle(r.cevap), gemini:true, model:r.model,
@@ -1722,6 +1794,14 @@ function notEkle(){
   kaydet(); ciz(); toast("Not eklendi");
 }
 function deger(i){ var e=document.getElementById(i); return e?String(e.value).trim():""; }
+/* TC'yi kaydetmeden önce sor: hatalıysa ya da başkasında kayıtlıysa. */
+function tcOnayla(tc, haric){
+  if(!tc) return true;
+  if(!tcGecerli(tc) && !confirm("TC Kimlik No hatalı görünüyor ("+tc+").\n\nYine de böyle kaydedilsin mi?")) return false;
+  var s=tcSahibi(tc, haric);
+  if(s && !confirm("Bu TC zaten \""+s.ad+"\" adına kayıtlı.\n\nYine de kaydedilsin mi?")) return false;
+  return true;
+}
 function formKaydet(){
   var mod=gorunum.mod, mid=null;
   if(mod==="yeni"){
@@ -1729,7 +1809,9 @@ function formKaydet(){
     if(!ad){ toast("Müşterinin adını yaz"); return; }
     var varOlan=veri.musteriler.filter(function(m){ return norm(m.ad)===norm(ad); })[0];
     if(varOlan && !confirm('"'+ad+'" zaten kayıtlı. Yine de yeni bir kayıt açılsın mı?')) return;
-    var m={ id:id(), ad:ad, tel:deger("f_tel"), koy:deger("f_koy"), arazi:deger("f_arazi"),
+    var tc=tcTemizle(deger("f_tc"));
+    if(!tcOnayla(tc, null)) return;
+    var m={ id:id(), ad:ad, tel:deger("f_tel"), tc:tc, koy:deger("f_koy"), arazi:deger("f_arazi"),
             hesapSahibiId:deger("f_hesap")||null, iliski:deger("f_iliski"), notlar:[] };
     veri.musteriler.push(m); mid=m.id;
   } else {
