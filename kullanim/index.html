@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macar Talimat</title>
+<meta name="theme-color" content="#1f6b3a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="ust no-print">
+  <div class="marka">
+    <img src="icons/icon-192.png" alt="" class="marka-ikon">
+    <div>
+      <div class="marka-ad">Macar Talimat</div>
+      <div class="marka-alt">İlaç kullanım talimatı</div>
+    </div>
+  </div>
+  <nav class="sekmeler" role="tablist">
+    <button class="sekme aktif" data-sekme="kullanim">📝 Kullanım Yaz</button>
+    <button class="sekme" data-sekme="ilaclar">🧪 İlaçlar</button>
+    <button class="sekme" data-sekme="gecmis">📂 Geçmiş</button>
+    <button class="sekme" data-sekme="ayarlar">⚙️ Ayarlar</button>
+  </nav>
+  <button id="kurBtn" class="btn ince gizli">⬇ Uygulama olarak yükle</button>
+</header>
+
+<div id="guncelBant" class="bant gizli no-print">
+  Yeni güncelleme hazır. <button id="guncelBtn" class="btn kucuk">Şimdi yenile</button>
+</div>
+
+<main class="no-print">
+  <!-- KULLANIM YAZ -->
+  <section id="s-kullanim" class="sayfa aktif">
+    <div class="kart">
+      <h2>Müşteri</h2>
+      <div class="satir">
+        <label class="alan genis">Müşterinin adı soyadı
+          <input id="mAd" list="musteriListe" autocomplete="off" placeholder="Örn. Ahmet Yılmaz">
+          <datalist id="musteriListe"></datalist>
+        </label>
+        <label class="alan">Tarih
+          <input id="mTarih" type="date">
+        </label>
+      </div>
+      <div class="satir">
+        <label class="alan genis">Ürün / tarla (isteğe bağlı)
+          <input id="mUrun" placeholder="Örn. Buğday – 40 dekar">
+        </label>
+      </div>
+      <label class="alan">Müşteriye özel not (isteğe bağlı)
+        <textarea id="mNot" rows="2" placeholder="Örn. İlaçlamayı rüzgârsız bir sabah yapın."></textarea>
+      </label>
+    </div>
+
+    <div class="kart">
+      <div class="kart-bas">
+        <h2>Kullanacağı ilaçlar <span id="seciliSayi" class="rozet">0 seçili</span></h2>
+        <input id="rAra" class="ara" type="search" placeholder="🔍 İlaç ara">
+      </div>
+      <div id="secimListe" class="secim-liste"></div>
+      <p id="secimBos" class="bos gizli">Henüz ilaç eklenmemiş. Önce <b>🧪 İlaçlar</b> sekmesinden ilaç ekleyin.</p>
+    </div>
+
+    <div class="alt-cubuk">
+      <button id="temizleBtn" class="btn ikincil">Temizle</button>
+      <button id="olusturBtn" class="btn ana">📄 Talimatı oluştur</button>
+    </div>
+  </section>
+
+  <!-- İLAÇLAR -->
+  <section id="s-ilaclar" class="sayfa">
+    <div class="kart">
+      <div class="kart-bas">
+        <h2>İlaç listesi <span id="ilacSayi" class="rozet">0</span></h2>
+        <div class="sag">
+          <input id="iAra" class="ara" type="search" placeholder="🔍 Ara">
+          <button id="yeniIlacBtn" class="btn ana">+ Yeni ilaç</button>
+        </div>
+      </div>
+      <div id="ilacListe" class="ilac-liste"></div>
+      <p id="ilacBos" class="bos gizli">Liste boş. <b>+ Yeni ilaç</b> ile ilk ilacı ekleyin.</p>
+    </div>
+  </section>
+
+  <!-- GEÇMİŞ -->
+  <section id="s-gecmis" class="sayfa">
+    <div class="kart">
+      <div class="kart-bas">
+        <h2>Basılan talimatlar <span id="gecmisSayi" class="rozet">0</span></h2>
+        <input id="gAra" class="ara" type="search" placeholder="🔍 Müşteri ara">
+      </div>
+      <div id="gecmisListe"></div>
+      <p id="gecmisBos" class="bos gizli">Henüz talimat oluşturulmadı.</p>
+    </div>
+  </section>
+
+  <!-- AYARLAR -->
+  <section id="s-ayarlar" class="sayfa">
+    <div class="kart">
+      <h2>Talimat başlığı</h2>
+      <div class="satir">
+        <label class="alan genis">Dükkan adı <input id="aDukkan"></label>
+      </div>
+      <div class="satir">
+        <label class="alan genis">Adres <input id="aAdres"></label>
+      </div>
+      <div class="satir">
+        <label class="alan">Telefon <input id="aTel"></label>
+        <label class="alan">Yetkili / imza <input id="aYetkili"></label>
+      </div>
+      <div class="satir logo-satir">
+        <div class="logo-onizle"><img id="aLogoImg" alt="Logo"></div>
+        <div>
+          <label class="btn ikincil dosya-btn">Logo seç<input id="aLogo" type="file" accept="image/*" hidden></label>
+          <button id="aLogoSil" class="btn ince">Varsayılan logo</button>
+        </div>
+      </div>
+      <label class="alan">Dikkat / uyarılar (her talimatta sabit çıkar, her satır bir madde)
+        <textarea id="aUyari" rows="8"></textarea>
+      </label>
+      <button id="ayarKaydet" class="btn ana">Kaydet</button>
+    </div>
+
+    <div class="kart">
+      <h2>Yedekleme</h2>
+      <p class="aciklama">İlaçlar ve geçmiş talimatlar bu bilgisayarda saklanır. Arada bir yedek alıp USB'ye ya da WhatsApp'a atın; bilgisayar değişirse yedekten geri yüklersiniz.</p>
+      <div class="satir">
+        <button id="yedekAl" class="btn ana">💾 Yedek al</button>
+        <label class="btn ikincil dosya-btn">📥 Yedekten yükle<input id="yedekYukle" type="file" accept=".json,application/json" hidden></label>
+      </div>
+      <p id="sonYedek" class="aciklama"></p>
+    </div>
+
+    <div class="kart">
+      <h2>Program hakkında</h2>
+      <p class="aciklama">Sürüm <b id="surum"></b>. Program internete bağlanınca güncellemeleri kendiliğinden alır; internet yokken de çalışır.</p>
+    </div>
+  </section>
+</main>
+
+<!-- İLAÇ DÜZENLE PENCERESİ -->
+<dialog id="ilacPencere" class="pencere no-print">
+  <form id="ilacForm" method="dialog">
+    <h2 id="ilacBaslik">Yeni ilaç</h2>
+    <label class="alan">İlacın adı *<input id="fAd" required placeholder="Örn. Opera Max"></label>
+    <label class="alan">Nasıl kullanılır (her satır talimatta ayrı madde olur)
+      <textarea id="fNasil" rows="9" placeholder="Örn:&#10;Dekara 100 ml kullanın.&#10;Depoyu yarıya kadar suyla doldurun, ilacı ekleyip karıştırın.&#10;Sabah erken ya da akşamüstü uygulayın."></textarea>
+    </label>
+    <p class="aciklama">Uyarılar her talimatın altında sabit çıkar; onları <b>Ayarlar</b>'dan değiştirebilirsiniz. <a href="https://bku.tarimorman.gov.tr/Arama/Index" target="_blank" rel="noopener">BKÜ'de kontrol et ↗</a></p>
+    <div class="pencere-alt">
+      <button type="button" id="ilacSil" class="btn tehlike gizli">Sil</button>
+      <span class="bosluk"></span>
+      <button type="button" id="ilacVazgec" class="btn ikincil">Vazgeç</button>
+      <button type="submit" id="ilacKaydet" class="btn ana">Kaydet</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ÖNİZLEME -->
+<div id="onizleme" class="onizleme gizli">
+  <div class="onizleme-cubuk no-print">
+    <button id="onizKapat" class="btn ikincil">← Geri</button>
+    <span class="onizleme-yazi">Yazıcı penceresinde yazıcıyı seçin ya da <b>PDF olarak kaydet</b>'i seçin.</span>
+    <button id="yazdirBtn" class="btn ana">🖨️ Yazdır / PDF</button>
+  </div>
+  <div id="kagit" class="kagit"></div>
+</div>
+
+<div id="bildirim" class="bildirim no-print"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

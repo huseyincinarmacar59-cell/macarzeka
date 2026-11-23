@@ -1,7 +1,7 @@
 {
-  "name": "Macar Reçete",
-  "short_name": "Macar Reçete",
-  "description": "Macar Tarım ilaç kullanım reçetesi programı",
+  "name": "Macar Talimat",
+  "short_name": "Macar Talimat",
+  "description": "Macar Tarım ilaç kullanım talimatı programı",
   "id": "./",
   "start_url": "./",
   "scope": "./",
