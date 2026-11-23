@@ -32,3 +32,6 @@ oturum.port
 
 node_modules/
 test-ikililer/
+
+# abonelik paneli ikonları
+!yonetim/*.png
