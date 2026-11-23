@@ -1,7 +1,7 @@
 /* Macar Talimat service worker — çevrimdışı çalışma + otomatik güncelleme */
-const SURUM = "macar-talimat-1.2.0";
+const SURUM = "macar-talimat-1.3.0";
 const DOSYALAR = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest",
-  "icons/logo.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
+  "icons/logo.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SURUM).then((c) => c.addAll(DOSYALAR.map((d) => new Request(d, { cache: "reload" })))));

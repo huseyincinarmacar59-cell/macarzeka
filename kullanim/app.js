@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.2.0";
+const SURUM = "1.3.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -144,7 +144,7 @@ function musteriListesi() {
 }
 
 function formuTemizle() {
-  $("#mAd").value = ""; $("#mUrun").value = ""; $("#mNot").value = "";
+  $("#mAd").value = ""; $("#mNot").value = "";
   $("#mTarih").value = bugun(); $("#rAra").value = "";
   secili = [];
   secimCiz();
@@ -159,7 +159,6 @@ $("#olusturBtn").addEventListener("click", () => {
     id: id(),
     musteri,
     tarih: $("#mTarih").value || bugun(),
-    urun: $("#mUrun").value.trim(),
     not: $("#mNot").value.trim(),
     // talimat basıldığı andaki ilaç bilgisi saklanır; ilaç sonra değişse de eski talimat aynı kalır
     ilaclar: secili.map((sid) => Object.assign({}, veri.ilaclar.find((i) => i.id === sid))),
@@ -172,7 +171,7 @@ $("#olusturBtn").addEventListener("click", () => {
 });
 
 /* ---------------- talimat kağıdı ---------------- */
-const VARSAYILAN_LOGO = "icons/logo.svg";
+const VARSAYILAN_LOGO = "icons/logo.png";
 
 function talimatHTML(r) {
   const a = veri.ayar;
@@ -195,7 +194,6 @@ function talimatHTML(r) {
     <div class="r-bas">
       <img class="r-logo" src="${esc(a.logo || VARSAYILAN_LOGO)}" alt="">
       <div>
-        <div class="r-dukkan">${esc(a.dukkan)}</div>
         <div class="r-iletisim">${esc(a.adres)}</div>
         <div class="r-iletisim">${a.tel ? "Tel: " + esc(a.tel) : ""}</div>
       </div>
@@ -206,7 +204,6 @@ function talimatHTML(r) {
     </div>
     <div class="r-musteri">
       <div><span class="r-etiket">Sayın</span><b>${esc(r.musteri)}</b></div>
-      ${r.urun ? `<div><span class="r-etiket">Ürün / tarla</span><b>${esc(r.urun)}</b></div>` : ""}
       <div><span class="r-etiket">İlaç sayısı</span><b>${r.ilaclar.length}</b></div>
     </div>
     ${r.not ? `<div class="r-not">${esc(r.not)}</div>` : ""}
@@ -312,7 +309,7 @@ function gecmisCiz() {
     <div class="gecmis-satir" data-id="${r.id}">
       <div class="gecmis-bilgi">
         <div class="gecmis-ad">${esc(r.musteri)}</div>
-        <div class="gecmis-alt">${tarihYaz(r.tarih)}${r.urun ? " · " + esc(r.urun) : ""} · ${esc(r.ilaclar.map((i) => i.ad).join(", "))}</div>
+        <div class="gecmis-alt">${tarihYaz(r.tarih)} · ${esc(r.ilaclar.map((i) => i.ad).join(", "))}</div>
       </div>
       <button class="btn ikincil kucuk" data-is="ac">🖨️ Aç / Yazdır</button>
       <button class="btn ince kucuk" data-is="kopya" title="Bu ilaçlarla yeni talimat">Tekrar yaz</button>
@@ -332,7 +329,7 @@ $("#gecmisListe").addEventListener("click", (e) => {
   }
   if (b.dataset.is === "kopya") {
     sekmeAc("kullanim");
-    $("#mAd").value = r.musteri; $("#mUrun").value = r.urun || ""; $("#mNot").value = r.not || "";
+    $("#mAd").value = r.musteri; $("#mNot").value = r.not || "";
     $("#mTarih").value = bugun();
     secili = r.ilaclar.map((i) => i.id).filter((sid) => veri.ilaclar.some((x) => x.id === sid));
     secimCiz();
@@ -344,7 +341,7 @@ $("#gecmisListe").addEventListener("click", (e) => {
 /* ---------------- ayarlar ---------------- */
 function ayarDoldur() {
   const a = veri.ayar;
-  $("#aDukkan").value = a.dukkan; $("#aAdres").value = a.adres; $("#aTel").value = a.tel;
+  $("#aAdres").value = a.adres; $("#aTel").value = a.tel;
   $("#aYetkili").value = a.yetkili; $("#aUyari").value = a.uyari;
   $("#aLogoImg").src = a.logo || VARSAYILAN_LOGO;
   $("#surum").textContent = SURUM;
@@ -352,7 +349,7 @@ function ayarDoldur() {
 }
 $("#ayarKaydet").addEventListener("click", () => {
   Object.assign(veri.ayar, {
-    dukkan: $("#aDukkan").value.trim(), adres: $("#aAdres").value.trim(), tel: $("#aTel").value.trim(),
+    adres: $("#aAdres").value.trim(), tel: $("#aTel").value.trim(),
     yetkili: $("#aYetkili").value.trim(), uyari: $("#aUyari").value
   });
   if (kaydet()) bildir("Ayarlar kaydedildi ✓");
@@ -377,7 +374,7 @@ $("#aLogo").addEventListener("change", (e) => {
   e.target.value = "";
 });
 $("#aLogoSil").addEventListener("click", () => {
-  veri.ayar.logo = ""; kaydet(); $("#aLogoImg").src = VARSAYILAN_LOGO; bildir("Varsayılan logo kullanılıyor");
+  veri.ayar.logo = ""; kaydet(); $("#aLogoImg").src = VARSAYILAN_LOGO; bildir("Macar Tarım logosu kullanılıyor");
 });
 
 /* ---------------- yedek ---------------- */
