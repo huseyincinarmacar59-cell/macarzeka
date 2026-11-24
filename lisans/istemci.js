@@ -112,7 +112,7 @@
     ".lsn-ort.lsn-kilit{background:linear-gradient(160deg,#0f172a,#1e293b);backdrop-filter:none}" +
     ".lsn-kart{width:100%;max-width:400px;background:#fff;color:#0f172a;border-radius:20px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:lsnUp .3s ease}" +
     ".lsn-ikon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;background:#fef3c7}" +
-    ".lsn-ikon.lsn-yesil{background:#dcfce7}.lsn-ikon.lsn-kirmizi{background:#fee2e2}.lsn-ikon.lsn-mavi{background:#e0e7ff}" +
+    ".lsn-ikon{color:#a16207}.lsn-ikon svg{width:26px;height:26px}.lsn-ikon.lsn-yesil{background:#dcfce7;color:#15803d}.lsn-ikon.lsn-kirmizi{background:#fee2e2;color:#b91c1c}.lsn-ikon.lsn-mavi{background:#e0e7ff;color:#4338ca}" +
     ".lsn-kart h3{margin:0 0 6px;font-size:19px;font-weight:700;color:#0f172a}" +
     ".lsn-kart p{margin:0 0 14px;font-size:14.5px;line-height:1.5;color:#475569}" +
     ".lsn-durum{display:flex;justify-content:space-between;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:13.5px;color:#334155;margin-bottom:14px}" +
@@ -161,7 +161,7 @@
       var r = kodGir(g.value);
       if (!r.ok) { il.className = "lsn-ileti lsn-hata"; il.textContent = r.hata; g.focus(); return; }
       if (kilitli && r.tur !== "ac") { il.className = "lsn-ileti lsn-hata"; il.textContent = r.tur === "abonelik" ? r.mesaj : "Bu kod uygulamayı açmaz. Açma kodu gerekiyor."; return; }
-      il.className = "lsn-ileti lsn-tamam"; il.textContent = "✓ " + r.mesaj;
+      il.className = "lsn-ileti lsn-tamam"; il.textContent = r.mesaj;
       g.disabled = true; bt.disabled = true;
       setTimeout(kapat, 1400);
     }
@@ -176,17 +176,17 @@
     var s = hesapla();
     if (s.tur === "kapali") { kilitGoster(); return; }
     var v = s.veri, son = odenenSon(v);
-    var ikon = "🔑", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
+    var ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='7.5' cy='15.5' r='4.5'/><path d='m10.7 12.3 9.3-9.3'/><path d='m16.5 6.5 3 3'/><path d='m14 9 2 2'/></svg>", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
 
     if (s.tur === "suresiz") {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Bu uygulama süresiz kullanıma açık.";
     } else if (s.odenmemis.length && s.gecikme >= 1) {
-      ikon = "⏳"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='M12 7.5V12l3 2'/></svg>"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
       metin = (s.odenmemis.length > 1 ? s.odenmemis.length + " aylık ödeme bekleniyor (" + esc(ayAdi(s.odenmemis[0])) + "'dan beri). " : esc(ayAdi(s.odenmemis[0])) + " ödemesi " + s.gecikme + " gündür bekleniyor. ") +
         "Ödemeyi yaptıysanız size verilen kodu aşağıya girin.";
     } else {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Yeni bir ödeme kodu aldıysanız aşağıya girebilirsiniz.";
     }
     durumSatir = '<div class="lsn-durum"><span>Ödenen son ay</span><span>' + (v.suresiz ? "Süresiz" : son ? esc(ayAdi(son)) : "—") + '</span></div>';
@@ -208,7 +208,7 @@
     kaldir("lsn-serit"); kaldir("lsn-pencere");
     if (document.getElementById("lsn-kilit")) return;
     var e = ekle('<div id="lsn-kilit" class="lsn-kok lsn-ort lsn-kilit" role="dialog" aria-modal="true"><div class="lsn-kart">' +
-      '<div class="lsn-ikon lsn-kirmizi">🔒</div><h3>Uygulama kapatıldı</h3>' +
+      '<div class="lsn-ikon lsn-kirmizi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></div><h3>Uygulama kapatıldı</h3>' +
       '<p>' + esc(ayar.ad) + ' şu anda kullanıma kapalı. Yeniden açmak için uygulama sahibiyle görüşüp size verilen açma kodunu girin.</p>' +
       kodAlani() + '<div class="lsn-dugmeler"><button class="lsn-ana">Uygulamayı aç</button></div>' +
       '<div class="lsn-alt">Kayıtlarınız silinmedi, açıldığında olduğu gibi duruyor.</div></div></div>');

@@ -255,7 +255,7 @@
     ".lsn-ort.lsn-kilit{background:linear-gradient(160deg,#0f172a,#1e293b);backdrop-filter:none}" +
     ".lsn-kart{width:100%;max-width:400px;background:#fff;color:#0f172a;border-radius:20px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:lsnUp .3s ease}" +
     ".lsn-ikon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;background:#fef3c7}" +
-    ".lsn-ikon.lsn-yesil{background:#dcfce7}.lsn-ikon.lsn-kirmizi{background:#fee2e2}.lsn-ikon.lsn-mavi{background:#e0e7ff}" +
+    ".lsn-ikon{color:#a16207}.lsn-ikon svg{width:26px;height:26px}.lsn-ikon.lsn-yesil{background:#dcfce7;color:#15803d}.lsn-ikon.lsn-kirmizi{background:#fee2e2;color:#b91c1c}.lsn-ikon.lsn-mavi{background:#e0e7ff;color:#4338ca}" +
     ".lsn-kart h3{margin:0 0 6px;font-size:19px;font-weight:700;color:#0f172a}" +
     ".lsn-kart p{margin:0 0 14px;font-size:14.5px;line-height:1.5;color:#475569}" +
     ".lsn-durum{display:flex;justify-content:space-between;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:13.5px;color:#334155;margin-bottom:14px}" +
@@ -304,7 +304,7 @@
       var r = kodGir(g.value);
       if (!r.ok) { il.className = "lsn-ileti lsn-hata"; il.textContent = r.hata; g.focus(); return; }
       if (kilitli && r.tur !== "ac") { il.className = "lsn-ileti lsn-hata"; il.textContent = r.tur === "abonelik" ? r.mesaj : "Bu kod uygulamayı açmaz. Açma kodu gerekiyor."; return; }
-      il.className = "lsn-ileti lsn-tamam"; il.textContent = "✓ " + r.mesaj;
+      il.className = "lsn-ileti lsn-tamam"; il.textContent = r.mesaj;
       g.disabled = true; bt.disabled = true;
       setTimeout(kapat, 1400);
     }
@@ -319,17 +319,17 @@
     var s = hesapla();
     if (s.tur === "kapali") { kilitGoster(); return; }
     var v = s.veri, son = odenenSon(v);
-    var ikon = "🔑", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
+    var ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='7.5' cy='15.5' r='4.5'/><path d='m10.7 12.3 9.3-9.3'/><path d='m16.5 6.5 3 3'/><path d='m14 9 2 2'/></svg>", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
 
     if (s.tur === "suresiz") {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Bu uygulama süresiz kullanıma açık.";
     } else if (s.odenmemis.length && s.gecikme >= 1) {
-      ikon = "⏳"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='M12 7.5V12l3 2'/></svg>"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
       metin = (s.odenmemis.length > 1 ? s.odenmemis.length + " aylık ödeme bekleniyor (" + esc(ayAdi(s.odenmemis[0])) + "'dan beri). " : esc(ayAdi(s.odenmemis[0])) + " ödemesi " + s.gecikme + " gündür bekleniyor. ") +
         "Ödemeyi yaptıysanız size verilen kodu aşağıya girin.";
     } else {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Yeni bir ödeme kodu aldıysanız aşağıya girebilirsiniz.";
     }
     durumSatir = '<div class="lsn-durum"><span>Ödenen son ay</span><span>' + (v.suresiz ? "Süresiz" : son ? esc(ayAdi(son)) : "—") + '</span></div>';
@@ -351,7 +351,7 @@
     kaldir("lsn-serit"); kaldir("lsn-pencere");
     if (document.getElementById("lsn-kilit")) return;
     var e = ekle('<div id="lsn-kilit" class="lsn-kok lsn-ort lsn-kilit" role="dialog" aria-modal="true"><div class="lsn-kart">' +
-      '<div class="lsn-ikon lsn-kirmizi">🔒</div><h3>Uygulama kapatıldı</h3>' +
+      '<div class="lsn-ikon lsn-kirmizi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></div><h3>Uygulama kapatıldı</h3>' +
       '<p>' + esc(ayar.ad) + ' şu anda kullanıma kapalı. Yeniden açmak için uygulama sahibiyle görüşüp size verilen açma kodunu girin.</p>' +
       kodAlani() + '<div class="lsn-dugmeler"><button class="lsn-ana">Uygulamayı aç</button></div>' +
       '<div class="lsn-alt">Kayıtlarınız silinmedi, açıldığında olduğu gibi duruyor.</div></div></div>');
@@ -409,6 +409,7 @@
 <!-- ABONELIK-BITIR -->
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><symbol id="i-kalem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol><symbol id="i-sise" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L4.6 18.4A1.8 1.8 0 0 0 6.2 21h11.6a1.8 1.8 0 0 0 1.6-2.6L14 9.5V3"/><path d="M7.5 15h9"/></symbol><symbol id="i-klasor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z"/></symbol><symbol id="i-ayar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6H9a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.04a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></symbol><symbol id="i-belge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol><symbol id="i-yazici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3.5h12V9"/><rect x="3" y="9" width="18" height="8" rx="2.2"/><path d="M7 14h10v6.5H7z"/></symbol><symbol id="i-kaydet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7.5 3v5h7V3"/><path d="M7 21v-7h10v7"/></symbol><symbol id="i-indir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10.5 5 5 5-5"/><path d="M5 20h14"/></symbol><symbol id="i-yukle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9"/><path d="m7 13.5 5-5 5 5"/><path d="M5 4h14"/></symbol><symbol id="i-anahtar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m16.5 6.5 3 3"/><path d="m14 9 2 2"/></symbol><symbol id="i-kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol><symbol id="i-onay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.2 2.6 2.6 4.9-5.4"/></symbol><symbol id="i-tik" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol><symbol id="i-carpi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol><symbol id="i-uyari" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4"/><path d="M12 17.2h.01"/></symbol><symbol id="i-saat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-ara" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></symbol><symbol id="i-arti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-geri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol><symbol id="i-dis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></symbol><symbol id="i-tekrar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></symbol><symbol id="i-cop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></symbol><symbol id="i-resim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol><symbol id="i-bilgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/></symbol><symbol id="i-kullanici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></symbol></svg>
 <header class="ust no-print">
   <div class="marka">
     <img src="icons/icon-192.png" alt="" class="marka-ikon">
@@ -418,12 +419,12 @@
     </div>
   </div>
   <nav class="sekmeler" role="tablist">
-    <button class="sekme aktif" data-sekme="kullanim">📝 Kullanım Yaz</button>
-    <button class="sekme" data-sekme="ilaclar">🧪 İlaçlar</button>
-    <button class="sekme" data-sekme="gecmis">📂 Geçmiş</button>
-    <button class="sekme" data-sekme="ayarlar">⚙️ Ayarlar</button>
+    <button class="sekme aktif" data-sekme="kullanim"><svg class="ik" aria-hidden="true"><use href="#i-kalem"/></svg><span>Kullanım Yaz</span></button>
+    <button class="sekme" data-sekme="ilaclar"><svg class="ik" aria-hidden="true"><use href="#i-sise"/></svg><span>İlaçlar</span></button>
+    <button class="sekme" data-sekme="gecmis"><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg><span>Geçmiş</span></button>
+    <button class="sekme" data-sekme="ayarlar"><svg class="ik" aria-hidden="true"><use href="#i-ayar"/></svg><span>Ayarlar</span></button>
   </nav>
-  <button id="kurBtn" class="btn ince gizli">⬇ Uygulama olarak yükle</button>
+  <button id="kurBtn" class="btn ince gizli"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Uygulama olarak yükle</button>
 </header>
 
 <div id="guncelBant" class="bant gizli no-print">
@@ -452,15 +453,15 @@
     <div class="kart">
       <div class="kart-bas">
         <h2>Kullanacağı ilaçlar <span id="seciliSayi" class="rozet">0 seçili</span></h2>
-        <input id="rAra" class="ara" type="search" placeholder="🔍 İlaç ara">
+        <input id="rAra" class="ara" type="search" placeholder="İlaç ara">
       </div>
       <div id="secimListe" class="secim-liste"></div>
-      <p id="secimBos" class="bos gizli">Henüz ilaç eklenmemiş. Önce <b>🧪 İlaçlar</b> sekmesinden ilaç ekleyin.</p>
+      <p id="secimBos" class="bos gizli">Henüz ilaç eklenmemiş. Önce <b>İlaçlar</b> sekmesinden ilaç ekleyin.</p>
     </div>
 
     <div class="alt-cubuk">
-      <button id="temizleBtn" class="btn ikincil">Temizle</button>
-      <button id="olusturBtn" class="btn ana">📄 Talimatı oluştur</button>
+      <button id="temizleBtn" class="btn ikincil"><svg class="ik" aria-hidden="true"><use href="#i-carpi"/></svg>Temizle</button>
+      <button id="olusturBtn" class="btn ana"><svg class="ik" aria-hidden="true"><use href="#i-belge"/></svg>Talimatı oluştur</button>
     </div>
   </section>
 
@@ -470,8 +471,8 @@
       <div class="kart-bas">
         <h2>İlaç listesi <span id="ilacSayi" class="rozet">0</span></h2>
         <div class="sag">
-          <input id="iAra" class="ara" type="search" placeholder="🔍 Ara">
-          <button id="yeniIlacBtn" class="btn ana">+ Yeni ilaç</button>
+          <input id="iAra" class="ara" type="search" placeholder="Ara">
+          <button id="yeniIlacBtn" class="btn ana"><svg class="ik" aria-hidden="true"><use href="#i-arti"/></svg>Yeni ilaç</button>
         </div>
       </div>
       <div id="ilacListe" class="ilac-liste"></div>
@@ -484,7 +485,7 @@
     <div class="kart">
       <div class="kart-bas">
         <h2>Basılan talimatlar <span id="gecmisSayi" class="rozet">0</span></h2>
-        <input id="gAra" class="ara" type="search" placeholder="🔍 Müşteri ara">
+        <input id="gAra" class="ara" type="search" placeholder="Müşteri ara">
       </div>
       <div id="gecmisListe"></div>
       <p id="gecmisBos" class="bos gizli">Henüz talimat oluşturulmadı.</p>
@@ -505,7 +506,7 @@
       <div class="satir logo-satir">
         <div class="logo-onizle"><img id="aLogoImg" alt="Logo"></div>
         <div>
-          <label class="btn ikincil dosya-btn">Logo seç<input id="aLogo" type="file" accept="image/*" hidden></label>
+          <label class="btn ikincil dosya-btn"><svg class="ik" aria-hidden="true"><use href="#i-resim"/></svg>Logo seç<input id="aLogo" type="file" accept="image/*" hidden></label>
           <button id="aLogoSil" class="btn ince">Macar Tarım logosuna dön</button>
         </div>
       </div>
@@ -519,14 +520,14 @@
       <h2>Yedekleme</h2>
       <p class="aciklama">İlaçlar ve geçmiş talimatlar bu bilgisayarda saklanır. Arada bir yedek alıp USB'ye ya da WhatsApp'a atın; bilgisayar değişirse yedekten geri yüklersiniz.</p>
       <div class="satir">
-        <button id="yedekAl" class="btn ana">💾 Yedek al</button>
-        <label class="btn ikincil dosya-btn">📥 Yedekten yükle<input id="yedekYukle" type="file" accept=".json,application/json" hidden></label>
+        <button id="yedekAl" class="btn ana"><svg class="ik" aria-hidden="true"><use href="#i-kaydet"/></svg>Yedek al</button>
+        <label class="btn ikincil dosya-btn"><svg class="ik" aria-hidden="true"><use href="#i-yukle"/></svg>Yedekten yükle<input id="yedekYukle" type="file" accept=".json,application/json" hidden></label>
       </div>
       <p id="sonYedek" class="aciklama"></p>
     </div>
 
     <div class="kart">
-      <h2>🔑 Abonelik</h2>
+      <h2><svg class="ik" aria-hidden="true"><use href="#i-anahtar"/></svg>Abonelik</h2>
       <p class="aciklama">Ödeme kodunu buraya girersiniz.</p>
       <div class="satir">
         <button type="button" class="btn ikincil" onclick="window.Lisans&&window.Lisans.ac()">Abonelik / kod gir</button>
@@ -548,7 +549,7 @@
     <label class="alan">Nasıl kullanılır (her satır talimatta ayrı madde olur)
       <textarea id="fNasil" rows="9" placeholder="Örn:&#10;Dekara 100 ml kullanın.&#10;Depoyu yarıya kadar suyla doldurun, ilacı ekleyip karıştırın.&#10;Sabah erken ya da akşamüstü uygulayın."></textarea>
     </label>
-    <p class="aciklama">Uyarılar her talimatın altında sabit çıkar; onları <b>Ayarlar</b>'dan değiştirebilirsiniz. <a href="https://bku.tarimorman.gov.tr/Arama/Index" target="_blank" rel="noopener">BKÜ'de kontrol et ↗</a></p>
+    <p class="aciklama">Uyarılar her talimatın altında sabit çıkar; onları <b>Ayarlar</b>'dan değiştirebilirsiniz. <a href="https://bku.tarimorman.gov.tr/Arama/Index" target="_blank" rel="noopener">BKÜ'de kontrol et <svg class="ik" aria-hidden="true"><use href="#i-dis"/></svg></a></p>
     <div class="pencere-alt">
       <button type="button" id="ilacSil" class="btn tehlike gizli">Sil</button>
       <span class="bosluk"></span>
@@ -561,9 +562,9 @@
 <!-- ÖNİZLEME -->
 <div id="onizleme" class="onizleme gizli">
   <div class="onizleme-cubuk no-print">
-    <button id="onizKapat" class="btn ikincil">← Geri</button>
+    <button id="onizKapat" class="btn ikincil"><svg class="ik" aria-hidden="true"><use href="#i-geri"/></svg>Geri</button>
     <span class="onizleme-yazi">Yazıcı penceresinde yazıcıyı seçin ya da <b>PDF olarak kaydet</b>'i seçin.</span>
-    <button id="yazdirBtn" class="btn ana">🖨️ Yazdır / PDF</button>
+    <button id="yazdirBtn" class="btn ana"><svg class="ik" aria-hidden="true"><use href="#i-yazici"/></svg>Yazdır / PDF</button>
   </div>
   <div id="kagit" class="kagit"></div>
 </div>

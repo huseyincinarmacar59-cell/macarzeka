@@ -164,6 +164,128 @@
     .nav{font-size:10px}
   }
   @media print{ .side{display:none} body{overflow:visible} .main{overflow:visible} }
+  /* ============================================================
+     Liquid Glass katmanı — renk/yerleşim üstteki temeli ezer.
+     Yazdırma ve işlevler etkilenmez.
+     ============================================================ */
+  :root{
+    --bg:#edf3ee; --card:rgba(255,255,255,.62); --line:rgba(20,60,38,.09); --line2:rgba(20,60,38,.07);
+    --field:rgba(20,60,38,.12); --ink:#14201a; --muted:#5d6b63;
+    --cam:rgba(255,255,255,.58); --cam-kenar:rgba(255,255,255,.78);
+    --cam-golge:0 1px 0 rgba(255,255,255,.9) inset,0 10px 30px -10px rgba(18,60,36,.16),0 2px 6px rgba(18,60,36,.05);
+    --bulanik:blur(22px) saturate(170%);
+  }
+  body{
+    background:
+      radial-gradient(900px 600px at 8% -8%,#c6e6d2 0%,transparent 60%),
+      radial-gradient(800px 560px at 102% 4%,#e3efcf 0%,transparent 58%),
+      radial-gradient(900px 700px at 55% 112%,#cfe7e0 0%,transparent 62%),
+      #edf3ee;
+    font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .ik{width:18px;height:18px;flex:none;vertical-align:-3px}
+
+  /* yan menü: yüzen cam panel */
+  .app{padding:12px;gap:12px;height:100vh}
+  .side{
+    background:var(--cam);color:var(--ink);border:1px solid var(--cam-kenar);border-radius:26px;
+    box-shadow:var(--cam-golge);-webkit-backdrop-filter:var(--bulanik);backdrop-filter:var(--bulanik);
+    padding:18px 12px;flex-basis:232px;
+  }
+  .brand{padding:0 8px 20px}
+  .brand .mark{background:linear-gradient(160deg,#2c8550,#1f5d45);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 6px 14px -6px rgba(31,93,69,.7);border-radius:12px}
+  .brand b{color:var(--ink)}
+  .brand span{color:var(--muted)}
+  .nav{color:var(--muted);border-radius:14px;font-weight:600;transition:background .2s,color .2s,box-shadow .2s}
+  .nav:hover{background:rgba(255,255,255,.55);color:var(--ink)}
+  .nav.on{background:rgba(255,255,255,.95);color:var(--green);box-shadow:0 1px 0 #fff inset,0 4px 14px -5px rgba(18,60,36,.28)}
+  .side-foot{border-top:1px solid rgba(20,60,38,.08)}
+  .kayit-durum{color:var(--muted)}
+  .kayit-durum .ik{width:15px;height:15px;color:var(--green);margin-right:4px;vertical-align:-3px}
+  .kayit-durum b .ik{color:var(--red)}
+  .mini{display:flex;align-items:center;gap:9px;background:transparent;color:var(--ink);border-radius:12px;font-weight:600}
+  .mini .ik{width:17px;height:17px;color:var(--green)}
+  .mini:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+
+  .main{padding:16px 22px 40px}
+  h1{font-weight:700;letter-spacing:-.5px}
+
+  /* butonlar: hap */
+  .btn{border-radius:999px;background:linear-gradient(180deg,#2c8550,#1f6b3a);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 6px 16px -7px rgba(31,107,58,.65);transition:transform .12s,background .2s}
+  .btn:hover{background:linear-gradient(180deg,#27784a,#185c31)}
+  .btn:active{transform:scale(.97)}
+  .btn2{background:rgba(255,255,255,.72);color:var(--ink);border:none;box-shadow:0 1px 0 #fff inset,0 0 0 1px rgba(20,60,38,.08),0 2px 6px rgba(18,60,36,.06)}
+  .btn2:hover{background:rgba(255,255,255,.96)}
+  .btn3{display:inline-flex;align-items:center;gap:6px;background:none;box-shadow:none}
+  .btn3:hover{background:none;text-decoration:underline}
+  .btn-dan{background:rgba(138,63,18,.09);border:none;color:var(--red);box-shadow:none}
+  .btn-dan:hover{background:rgba(138,63,18,.15)}
+
+  /* kartlar ve kutular: cam (bulanıklık yalnız menüde; çok kartta eski bilgisayarı yormasın) */
+  .card,.box,.seskutu,.liste-sat{
+    background:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.56));
+    border:1px solid var(--cam-kenar);box-shadow:var(--cam-golge)
+  }
+  .card{border-radius:20px}
+  .box,.seskutu{border-radius:22px}
+  .liste-sat{border-radius:16px;box-shadow:0 1px 0 #fff inset,0 2px 8px -3px rgba(18,60,36,.1)}
+  .card .k{font-weight:600}
+  .card .v{font-weight:700}
+  .box-h{border-bottom:none;padding:16px 20px 6px;font-size:15.5px}
+  .box-p{padding:16px 20px 20px}
+  .box[style*="--dark"]{background:linear-gradient(160deg,#2a7451,#1a4b37)!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 14px 30px -12px rgba(26,75,55,.6)!important}
+  .box[style*="--dark"] .mini{background:rgba(255,255,255,.14);color:#fff}
+  .box[style*="--dark"] .mini .ik{color:#bfe8d0}
+  .box[style*="--dark"] .mini:hover{background:rgba(255,255,255,.22)}
+  .box[style*="--dark"] [style*="--dark-mut"]{color:#cfe5d8!important}
+  [style*="background:var(--dark);display:flex"]{background:linear-gradient(160deg,#2c8550,#1f5d45)!important}
+  .card[style*="#FAF8F2"],.notkart,.duyulan{background:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.8)}
+
+  /* tablo */
+  th{background:transparent;font-size:12.5px;border-bottom:1px solid var(--line2)}
+  td{border-top:1px solid var(--line2)}
+  tbody tr{transition:background .15s}
+  tbody tr:hover{background:rgba(255,255,255,.6)}
+
+  /* form alanları */
+  input,select,textarea{background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.95);border-radius:14px;box-shadow:0 1px 2px rgba(18,60,36,.06) inset;transition:box-shadow .15s,background .15s}
+  input:focus,select:focus,textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 3px rgba(31,93,69,.22),0 1px 2px rgba(18,60,36,.06) inset}
+  .yaz input{border:1px solid rgba(255,255,255,.95);border-radius:999px;padding-left:20px;background:rgba(255,255,255,.85)}
+  .yaz button{border-radius:999px;background:linear-gradient(180deg,#2c8550,#1f6b3a);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 6px 16px -7px rgba(31,107,58,.65)}
+  .mikbtn{border-radius:999px;border:none;background:rgba(255,255,255,.75);box-shadow:0 1px 0 #fff inset,0 0 0 1.5px rgba(31,93,69,.45)}
+  .mikbtn:hover{background:#fff}
+  .mikbtn.kayitta{box-shadow:none}
+
+  /* seçim düğmeleri */
+  .pill,.rad,.chip{border:none;border-radius:999px;background:rgba(255,255,255,.66);box-shadow:0 1px 0 #fff inset,0 0 0 1px rgba(20,60,38,.09)}
+  .pill:hover,.chip:hover,.rad:hover{background:rgba(255,255,255,.95)}
+  .pill.on,.rad.on{background:rgba(231,239,232,.95);border:none;box-shadow:0 0 0 1.5px var(--green),0 4px 12px -6px rgba(31,93,69,.5)}
+  .kaynak{background:rgba(255,255,255,.6);border-radius:999px}
+  .tag{border-radius:999px}
+
+  /* bilgi kutuları */
+  .ozet{background:linear-gradient(180deg,rgba(231,243,235,.88),rgba(220,238,227,.7));border:1px solid rgba(255,255,255,.85);border-radius:20px;box-shadow:var(--cam-golge)}
+  .uyari{background:rgba(253,240,233,.82);border:1px solid rgba(235,214,198,.9);border-radius:16px}
+  .ava{border-radius:14px;background:rgba(31,93,69,.1)}
+
+  /* bildirim */
+  .toast{background:rgba(24,36,29,.8);-webkit-backdrop-filter:var(--bulanik);backdrop-filter:var(--bulanik);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:12px 22px;font-weight:600}
+
+  /* bulanıklık yoksa / saydamlık kapalıysa okunur kalsın */
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .side{background:rgba(255,255,255,.9)} }
+  @media (prefers-reduced-transparency:reduce){ .side,.toast{-webkit-backdrop-filter:none;backdrop-filter:none} .side{background:rgba(255,255,255,.95)} }
+
+  /* telefon: alttaki menü yüzen cam hap */
+  @media (max-width:760px){
+    .app{padding:0;gap:0;height:auto}
+    .side{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px;border-radius:26px;border:1px solid var(--cam-kenar);flex-basis:auto}
+    .nav{border-radius:18px}
+    .nav.on{background:rgba(255,255,255,.95)}
+    .main{padding:calc(16px + env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom))}
+    .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+  }
+  @media print{ body{background:#fff} .app{padding:0} .card,.box{box-shadow:none;background:#fff} }
 </style>
 <!-- ABONELIK-BASLA · lisans/olustur.js üretir, elle düzenleme -->
 <script>window.LISANS_AYAR={"uyg":"MZ","ad":"Macar Zeka","gizli":"04b50e562d43e72a4e638916a2b8388a2c9274657270dd4fbe9b30f873f9ce89","otomatik":false};</script>
@@ -412,7 +534,7 @@
     ".lsn-ort.lsn-kilit{background:linear-gradient(160deg,#0f172a,#1e293b);backdrop-filter:none}" +
     ".lsn-kart{width:100%;max-width:400px;background:#fff;color:#0f172a;border-radius:20px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:lsnUp .3s ease}" +
     ".lsn-ikon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;background:#fef3c7}" +
-    ".lsn-ikon.lsn-yesil{background:#dcfce7}.lsn-ikon.lsn-kirmizi{background:#fee2e2}.lsn-ikon.lsn-mavi{background:#e0e7ff}" +
+    ".lsn-ikon{color:#a16207}.lsn-ikon svg{width:26px;height:26px}.lsn-ikon.lsn-yesil{background:#dcfce7;color:#15803d}.lsn-ikon.lsn-kirmizi{background:#fee2e2;color:#b91c1c}.lsn-ikon.lsn-mavi{background:#e0e7ff;color:#4338ca}" +
     ".lsn-kart h3{margin:0 0 6px;font-size:19px;font-weight:700;color:#0f172a}" +
     ".lsn-kart p{margin:0 0 14px;font-size:14.5px;line-height:1.5;color:#475569}" +
     ".lsn-durum{display:flex;justify-content:space-between;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:13.5px;color:#334155;margin-bottom:14px}" +
@@ -461,7 +583,7 @@
       var r = kodGir(g.value);
       if (!r.ok) { il.className = "lsn-ileti lsn-hata"; il.textContent = r.hata; g.focus(); return; }
       if (kilitli && r.tur !== "ac") { il.className = "lsn-ileti lsn-hata"; il.textContent = r.tur === "abonelik" ? r.mesaj : "Bu kod uygulamayı açmaz. Açma kodu gerekiyor."; return; }
-      il.className = "lsn-ileti lsn-tamam"; il.textContent = "✓ " + r.mesaj;
+      il.className = "lsn-ileti lsn-tamam"; il.textContent = r.mesaj;
       g.disabled = true; bt.disabled = true;
       setTimeout(kapat, 1400);
     }
@@ -476,17 +598,17 @@
     var s = hesapla();
     if (s.tur === "kapali") { kilitGoster(); return; }
     var v = s.veri, son = odenenSon(v);
-    var ikon = "🔑", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
+    var ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='7.5' cy='15.5' r='4.5'/><path d='m10.7 12.3 9.3-9.3'/><path d='m16.5 6.5 3 3'/><path d='m14 9 2 2'/></svg>", ikonSinif = "lsn-mavi", baslik = "Abonelik", metin = "", durumSatir = "";
 
     if (s.tur === "suresiz") {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Bu uygulama süresiz kullanıma açık.";
     } else if (s.odenmemis.length && s.gecikme >= 1) {
-      ikon = "⏳"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='M12 7.5V12l3 2'/></svg>"; ikonSinif = ""; baslik = "Abonelik ödemesi bekleniyor";
       metin = (s.odenmemis.length > 1 ? s.odenmemis.length + " aylık ödeme bekleniyor (" + esc(ayAdi(s.odenmemis[0])) + "'dan beri). " : esc(ayAdi(s.odenmemis[0])) + " ödemesi " + s.gecikme + " gündür bekleniyor. ") +
         "Ödemeyi yaptıysanız size verilen kodu aşağıya girin.";
     } else {
-      ikon = "✅"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
+      ikon = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9'/><path d='m8.3 12.2 2.6 2.6 4.9-5.4'/></svg>"; ikonSinif = "lsn-yesil"; baslik = "Abonelik aktif";
       metin = "Yeni bir ödeme kodu aldıysanız aşağıya girebilirsiniz.";
     }
     durumSatir = '<div class="lsn-durum"><span>Ödenen son ay</span><span>' + (v.suresiz ? "Süresiz" : son ? esc(ayAdi(son)) : "—") + '</span></div>';
@@ -508,7 +630,7 @@
     kaldir("lsn-serit"); kaldir("lsn-pencere");
     if (document.getElementById("lsn-kilit")) return;
     var e = ekle('<div id="lsn-kilit" class="lsn-kok lsn-ort lsn-kilit" role="dialog" aria-modal="true"><div class="lsn-kart">' +
-      '<div class="lsn-ikon lsn-kirmizi">🔒</div><h3>Uygulama kapatıldı</h3>' +
+      '<div class="lsn-ikon lsn-kirmizi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></div><h3>Uygulama kapatıldı</h3>' +
       '<p>' + esc(ayar.ad) + ' şu anda kullanıma kapalı. Yeniden açmak için uygulama sahibiyle görüşüp size verilen açma kodunu girin.</p>' +
       kodAlani() + '<div class="lsn-dugmeler"><button class="lsn-ana">Uygulamayı aç</button></div>' +
       '<div class="lsn-alt">Kayıtlarınız silinmedi, açıldığında olduğu gibi duruyor.</div></div></div>');
@@ -566,6 +688,7 @@
 <!-- ABONELIK-BITIR -->
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><symbol id="i-kalem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol><symbol id="i-sise" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.5L4.6 18.4A1.8 1.8 0 0 0 6.2 21h11.6a1.8 1.8 0 0 0 1.6-2.6L14 9.5V3"/><path d="M7.5 15h9"/></symbol><symbol id="i-klasor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z"/></symbol><symbol id="i-ayar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6H9a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.04a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></symbol><symbol id="i-belge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol><symbol id="i-yazici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3.5h12V9"/><rect x="3" y="9" width="18" height="8" rx="2.2"/><path d="M7 14h10v6.5H7z"/></symbol><symbol id="i-kaydet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7.5 3v5h7V3"/><path d="M7 21v-7h10v7"/></symbol><symbol id="i-indir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10.5 5 5 5-5"/><path d="M5 20h14"/></symbol><symbol id="i-yukle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9"/><path d="m7 13.5 5-5 5 5"/><path d="M5 4h14"/></symbol><symbol id="i-anahtar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m16.5 6.5 3 3"/><path d="m14 9 2 2"/></symbol><symbol id="i-kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol><symbol id="i-onay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.2 2.6 2.6 4.9-5.4"/></symbol><symbol id="i-tik" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol><symbol id="i-carpi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol><symbol id="i-uyari" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4"/><path d="M12 17.2h.01"/></symbol><symbol id="i-saat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-ara" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></symbol><symbol id="i-arti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-geri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol><symbol id="i-dis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></symbol><symbol id="i-tekrar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></symbol><symbol id="i-cop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></symbol><symbol id="i-resim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol><symbol id="i-bilgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/></symbol><symbol id="i-kullanici" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></symbol></svg>
 <script>
 /* Sunucu köprüsü: program kendi mini sunucusuyla çalıştığında kayıt
    işlemleri buradan gider. Dosyadan açıldığında devre dışı kalır. */
@@ -823,9 +946,9 @@
     <button class="nav" data-git="ayarlar"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/></svg> Ayarlar</button>
     <div class="side-foot">
       <div class="kayit-durum" id="durum">Açılıyor…</div>
-      <button class="mini" id="klasorAc">📁 Veri klasörünü aç</button>
-      <button class="mini" id="yedekAl">⬇ Yedek al</button>
-      <button class="mini" id="yedekYukle">⬆ Yedekten geri yükle</button>
+      <button class="mini" id="klasorAc"><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg>Veri klasörünü aç</button>
+      <button class="mini" id="yedekAl"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Yedek al</button>
+      <button class="mini" id="yedekYukle"><svg class="ik" aria-hidden="true"><use href="#i-yukle"/></svg>Yedekten geri yükle</button>
       <input type="file" id="dosyaSec" accept=".json,application/json" class="sr">
     </div>
   </nav>
@@ -945,11 +1068,11 @@ function durumYaz(){
   var d=document.getElementById("durum");
   if(!d) return;
   if(MASAUSTU){
-    if(kayitHata) d.innerHTML='<b style="color:#F3B48A">⚠️ KAYDEDİLEMEDİ</b><br>'+esc(kayitHata)+'<br>Yedek al ve bana haber ver.';
-    else if(sonKayit) d.innerHTML='✅ Kaydedildi <b style="color:#fff">'+esc(sonKayit)+'</b><br><span style="font-size:11px">'+esc(bilgi.dosya||"")+'</span>';
+    if(kayitHata) d.innerHTML='<b style="color:var(--red)"><svg class="ik" aria-hidden="true"><use href="#i-uyari"/></svg>KAYDEDİLEMEDİ</b><br>'+esc(kayitHata)+'<br>Yedek al ve bana haber ver.';
+    else if(sonKayit) d.innerHTML='<svg class="ik" aria-hidden="true"><use href="#i-onay"/></svg>Kaydedildi <b style="color:var(--ink)">'+esc(sonKayit)+'</b><br><span style="font-size:11px">'+esc(bilgi.dosya||"")+'</span>';
     else d.innerHTML='Veriler şuraya kaydediliyor:<br><span style="font-size:11px;color:#fff">'+esc(bilgi.dosya||"veriler.json")+'</span>';
   } else {
-    d.innerHTML='✅ Otomatik kaydediliyor';
+    d.innerHTML='<svg class="ik" aria-hidden="true"><use href="#i-onay"/></svg>Otomatik kaydediliyor';
   }
 }
 function hafizayaYaz(){ try{ localStorage.setItem(ANAHTAR, JSON.stringify(veri)); }catch(e){} }
@@ -1068,8 +1191,8 @@ function tcDurumHTML(v){
   var t=tcTemizle(v);
   if(!t) return "";
   if(t.length<11) return '<span style="color:var(--muted)">'+t.length+'/11 hane</span>';
-  return tcGecerli(t) ? '<span style="color:var(--green);font-weight:600">✓ Geçerli TC</span>'
-                      : '<span style="color:var(--red);font-weight:600">✗ Hatalı TC — rakamları kontrol et</span>';
+  return tcGecerli(t) ? '<span style="color:var(--green);font-weight:600"><svg class="ik" aria-hidden="true"><use href="#i-tik"/></svg>Geçerli TC</span>'
+                      : '<span style="color:var(--red);font-weight:600"><svg class="ik" aria-hidden="true"><use href="#i-carpi"/></svg>Hatalı TC — rakamları kontrol et</span>';
 }
 
 /* Not: TC Kimlik No Gemini'ye giden deftere bilerek KONMAZ. */
@@ -1703,7 +1826,7 @@ function panelHTML(){
   var bl=borclular().slice(0,5);
 
   return '<div class="head"><div><h1>Panel</h1><div class="sub">'+trTarih(bugun())+' · '+veri.musteriler.length+' müşteri</div></div>'+
-    '<button class="btn" data-git="yeni">+ Yeni Kayıt</button></div>'+
+    '<button class="btn" data-git="yeni"><svg class="ik" aria-hidden="true"><use href="#i-arti"/></svg>Yeni Kayıt</button></div>'+
     guncellemeSeridiHTML()+
     '<div class="cards">'+
       '<div class="card"><div class="k">Toplam müşteri</div><div class="v">'+veri.musteriler.length+'</div></div>'+
@@ -1735,7 +1858,7 @@ function panelHTML(){
         '<div class="box" style="background:var(--dark);border:none;color:#fff"><div class="box-p">'+
           '<div style="font-size:16px;font-weight:700;margin-bottom:5px">Hafızaya sor</div>'+
           '<div style="font-size:13px;color:var(--dark-mut);margin-bottom:13px;line-height:1.5">Yazdığın her şeyi hatırlıyor. Normal cümleyle sor yeter.</div>'+
-          '<button class="mini" style="width:100%" data-sor="Bu ay kimler ödeme yapmadı?">🔍 “Bu ay kimler ödeme yapmadı?”</button>'+
+          '<button class="mini" style="width:100%" data-sor="Bu ay kimler ödeme yapmadı?"><svg class="ik" aria-hidden="true"><use href="#i-ara"/></svg>“Bu ay kimler ödeme yapmadı?”</button>'+
         '</div></div>'+
       '</div>'+
     '</div>';
@@ -1773,7 +1896,7 @@ function listeHTML(){
   var acik=veri.musteriler.filter(function(m){return borc(m.id)>0;}).length;
 
   return '<div class="head"><div><h1>Müşteriler</h1><div class="sub">'+veri.musteriler.length+' kişi · '+acik+' kişide açık hesap var</div></div>'+
-    '<button class="btn" data-git="yeni">+ Yeni Kayıt</button></div>'+
+    '<button class="btn" data-git="yeni"><svg class="ik" aria-hidden="true"><use href="#i-arti"/></svg>Yeni Kayıt</button></div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px">'+
       '<label for="ara" class="sr">Listede ara</label>'+
       '<input id="ara" type="search" placeholder="İsim, köy, telefon, TC veya hesap sahibi…" value="'+esc(gorunum.arama)+'" style="flex:1 1 260px;min-width:0">'+
@@ -1831,7 +1954,7 @@ function kartHTML(){
   if(!m) return '<div class="bos"><h3>Kayıt bulunamadı</h3><button class="btn" data-git="musteriler">Listeye dön</button></div>';
   var sl=satislari(m.id), ol=odemeleri(m.id), bg=bagliOlanlar(m.id), b=borc(m.id);
 
-  return '<button class="btn3" data-git="musteriler">‹ Müşteriler</button>'+
+  return '<button class="btn3" data-git="musteriler"><svg class="ik" aria-hidden="true"><use href="#i-geri"/></svg>Müşteriler</button>'+
     '<div class="box" style="padding:18px;display:flex;flex-wrap:wrap;gap:15px;align-items:center;justify-content:space-between;margin:10px 0 18px">'+
       '<div style="display:flex;align-items:center;gap:14px;min-width:0">'+
         '<div class="ava" style="width:54px;height:54px;border-radius:16px;font-size:18px">'+esc(bashar(m.ad))+'</div>'+
@@ -1995,7 +2118,7 @@ function yeniHTML(){
     '<div class="cols"><div class="col-main">'+kisiBlok+satisBlok+odemeBlok+'</div>'+
     '<div class="col-side">'+bagBlok+notBlok+
       '<div style="display:flex;gap:11px"><button class="btn btn2" data-git="panel">Vazgeç</button>'+
-      '<button class="btn" style="flex:1 1 auto" id="kaydetBtn">✓ Kaydet</button></div>'+
+      '<button class="btn" style="flex:1 1 auto" id="kaydetBtn"><svg class="ik" aria-hidden="true"><use href="#i-tik"/></svg>Kaydet</button></div>'+
     '</div></div>';
 }
 
@@ -2186,12 +2309,12 @@ function ayarlarHTML(){
           '<div style="font-size:13px;word-break:break-all;margin-bottom:16px">'+esc(bilgi.dosya||"—")+'</div>'+
           '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarKlasor">Veri klasörünü aç</button>'
         : '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px">Kayıtlar bu tarayıcıda duruyor. Ayda bir yedek alıp flaşa ya da telefona at.</div>')+
-      '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarYedek">Yedek al</button>'+
-      '<button class="btn btn2" style="width:100%" id="ayarYedekYukle">Yedekten geri yükle</button>'+
+      '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarYedek"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Yedek al</button>'+
+      '<button class="btn btn2" style="width:100%" id="ayarYedekYukle"><svg class="ik" aria-hidden="true"><use href="#i-yukle"/></svg>Yedekten geri yükle</button>'+
     '</div></div>'+
-    '<div class="box"><div class="box-h">🔑 Abonelik</div><div class="box-p">'+
+    '<div class="box"><div class="box-h"><span style="display:inline-flex;align-items:center;gap:8px"><svg class="ik" aria-hidden="true"><use href="#i-anahtar"/></svg>Abonelik</span></div><div class="box-p">'+
       '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px">Ödeme kodunu buraya girersin.</div>'+
-      '<button class="btn btn2" style="width:100%" id="ayarAbonelik">Abonelik / kod gir</button>'+
+      '<button class="btn btn2" style="width:100%" id="ayarAbonelik"><svg class="ik" aria-hidden="true"><use href="#i-anahtar"/></svg>Abonelik / kod gir</button>'+
     '</div></div>'+
   '</div></div>';
 }
