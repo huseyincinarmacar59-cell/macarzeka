@@ -455,7 +455,7 @@
         <h2>Kullanacağı ilaçlar <span id="seciliSayi" class="rozet">0 seçili</span></h2>
         <input id="rAra" class="ara" type="search" placeholder="İlaç ara">
       </div>
-      <div id="secimListe" class="secim-liste"></div>
+      <div id="secimListe" class="gruplar"></div>
       <p id="secimBos" class="bos gizli">Henüz ilaç eklenmemiş. Önce <b>İlaçlar</b> sekmesinden ilaç ekleyin.</p>
     </div>
 
@@ -475,8 +475,18 @@
           <button id="yeniIlacBtn" class="btn ana"><svg class="ik" aria-hidden="true"><use href="#i-arti"/></svg>Yeni ilaç</button>
         </div>
       </div>
-      <div id="ilacListe" class="ilac-liste"></div>
+      <div id="ilacListe" class="gruplar"></div>
       <p id="ilacBos" class="bos gizli">Liste boş. <b>+ Yeni ilaç</b> ile ilk ilacı ekleyin.</p>
+    </div>
+
+    <div class="kart" id="katKart">
+      <h2>Kategoriler <span id="katSayi" class="rozet">0</span></h2>
+      <p class="aciklama">İlaçlar talimatta kategorisinin başlığı altında toplanır (ör. Ot İlaçlaması). Sırayı oklarla değiştirebilirsiniz.</p>
+      <div id="katListe" class="kat-liste"></div>
+      <div class="satir kat-ekle">
+        <input id="katYeni" placeholder="Yeni kategori adı, ör. Böcek İlaçlaması">
+        <button id="katEkleBtn" class="btn ikincil"><svg class="ik" aria-hidden="true"><use href="#i-arti"/></svg>Ekle</button>
+      </div>
     </div>
   </section>
 
@@ -545,7 +555,10 @@
 <dialog id="ilacPencere" class="pencere no-print">
   <form id="ilacForm" method="dialog">
     <h2 id="ilacBaslik">Yeni ilaç</h2>
-    <label class="alan">İlacın adı *<input id="fAd" required placeholder="Örn. Opera Max"></label>
+    <div class="satir">
+      <label class="alan genis">İlacın adı *<input id="fAd" required placeholder="Örn. Tango"></label>
+      <label class="alan">Kategori <select id="fKat"></select></label>
+    </div>
     <label class="alan">Nasıl kullanılır (her satır talimatta ayrı madde olur)
       <textarea id="fNasil" rows="9" placeholder="Örn:&#10;Dekara 100 ml kullanın.&#10;Depoyu yarıya kadar suyla doldurun, ilacı ekleyip karıştırın.&#10;Sabah erken ya da akşamüstü uygulayın."></textarea>
     </label>

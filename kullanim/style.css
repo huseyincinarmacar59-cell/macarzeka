@@ -318,3 +318,18 @@ input[type=search]:focus { background-color: #fff; }
   .kagit { padding: 0; }
   .a4 { box-shadow: none; margin: 0; padding: 0; width: auto; min-height: 272mm; }
 }
+
+/* Kategoriler */
+.gruplar { display: flex; flex-direction: column; gap: 16px; }
+.grup-bas { font-weight: 700; color: var(--yesil); font-size: 14px; margin: 0 0 8px 4px; display: flex; align-items: center; gap: 6px; }
+.grup-sayi { background: var(--yesil-acik); color: var(--yesil); font-size: 11px; padding: 1px 7px; border-radius: 99px; }
+.kat-liste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.kat-satir { display: flex; align-items: center; gap: 8px; }
+.kat-satir .kat-ad { flex: 1; }
+.kat-adet { font-size: 12px; color: var(--soluk); white-space: nowrap; min-width: 52px; }
+.kat-satir .btn[disabled] { opacity: .3; cursor: default; }
+.kat-ekle input { flex: 1; }
+.r-kat { text-transform: uppercase; letter-spacing: .3px; }
+.r-kalem { padding: 3px 0; border-bottom: 1px dashed #e1e7e3; }
+.r-kalem:last-child { border-bottom: 0; }
+.r-alt-adim { margin: 2px 0 0; padding-left: 18px; }

@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.5.0";
+const SURUM = "1.6.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -26,6 +26,7 @@ const VARSAYILAN_AYAR = {
 };
 
 /* ---------------- veri ---------------- */
+const varsayilanKategoriler = () => ["Ot İlaçlaması", "Kökboğaz İlaçlaması", "Pas İlaçlaması"].map((ad, n) => ({ id: "k" + (n + 1), ad }));
 const ESKI_ALAN = "rec" + "eteler";
 function eskiListe(v) {
   if (Array.isArray(v.talimatlar)) return v.talimatlar;
@@ -45,12 +46,13 @@ function yukle() {
       return {
         ilaclar: Array.isArray(v.ilaclar) ? v.ilaclar : [],
         talimatlar: eskiListe(v) || [],
+        kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(),
         ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}),
         sonYedek: v.sonYedek || null
       };
     }
   } catch (e) { console.error("Veri okunamadı", e); }
-  return { ilaclar: [], talimatlar: [], ayar: Object.assign({}, VARSAYILAN_AYAR), sonYedek: null };
+  return { ilaclar: [], talimatlar: [], kategoriler: varsayilanKategoriler(), ayar: Object.assign({}, VARSAYILAN_AYAR), sonYedek: null };
 }
 
 function kaydet() {
@@ -93,11 +95,71 @@ function bildir(mesaj, tur) {
 
 function eslesir(ilac, q) {
   if (!q) return true;
-  const metin = kucuk([ilac.ad, ilac.nasil].join(" "));
+  const metin = kucuk([ilac.ad, ilac.nasil, katAd(ilac.kategori)].join(" "));
   return kucuk(q).split(/\s+/).filter(Boolean).every((p) => metin.includes(p));
 }
 
 const ilkSatir = (s) => String(s || "").split("\n").map((x) => x.trim()).find(Boolean) || "Kullanım bilgisi yok";
+
+/* ---------------- kategoriler ---------------- */
+const katAd = (kid) => (kid && veri.kategoriler.find((k) => k.id === kid)?.ad) || "";
+
+// ilaçları kategori sırasına göre gruplar; kategorisizler en sonda
+function kategoriGruplari(ilaclar) {
+  const gruplar = veri.kategoriler.map((k) => ({ kat: k, ilaclar: [] }));
+  const kategorisiz = { kat: null, ilaclar: [] };
+  for (const i of ilaclar) (gruplar.find((g) => g.kat.id === i.kategori) || kategorisiz).ilaclar.push(i);
+  return [...gruplar, kategorisiz].filter((g) => g.ilaclar.length);
+}
+const grupBaslik = (g) => `<div class="grup-bas">${g.kat ? esc(g.kat.ad) : "Kategorisiz"} <span class="grup-sayi">${g.ilaclar.length}</span></div>`;
+
+function katCiz() {
+  $("#katSayi").textContent = veri.kategoriler.length;
+  $("#katListe").innerHTML = veri.kategoriler.map((k, n) => {
+    const adet = veri.ilaclar.filter((i) => i.kategori === k.id).length;
+    return `<div class="kat-satir" data-id="${k.id}">
+      <input class="kat-ad" value="${esc(k.ad)}" aria-label="Kategori adı">
+      <span class="kat-adet">${adet} ilaç</span>
+      <button class="btn ince kucuk" data-is="yukari" ${n === 0 ? "disabled" : ""} title="Yukarı" aria-label="Yukarı">↑</button>
+      <button class="btn ince kucuk" data-is="asagi" ${n === veri.kategoriler.length - 1 ? "disabled" : ""} title="Aşağı" aria-label="Aşağı">↓</button>
+      <button class="btn tehlike kucuk" data-is="sil" title="Sil" aria-label="Sil">${ik("cop")}</button>
+    </div>`;
+  }).join("") || '<p class="bos">Henüz kategori yok.</p>';
+}
+$("#katListe").addEventListener("change", (e) => {
+  if (!e.target.classList.contains("kat-ad")) return;
+  const k = veri.kategoriler.find((x) => x.id === e.target.closest(".kat-satir").dataset.id);
+  const ad = e.target.value.trim();
+  if (!k) return;
+  if (!ad) { e.target.value = k.ad; return; }
+  k.ad = ad; kaydet(); ilacCiz(); bildir("Kategori adı değişti", "tamam");
+});
+$("#katListe").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-is]");
+  if (!b) return;
+  const id = b.closest(".kat-satir").dataset.id;
+  const n = veri.kategoriler.findIndex((x) => x.id === id);
+  const k = veri.kategoriler[n];
+  if (b.dataset.is === "yukari" && n > 0) [veri.kategoriler[n - 1], veri.kategoriler[n]] = [k, veri.kategoriler[n - 1]];
+  if (b.dataset.is === "asagi" && n < veri.kategoriler.length - 1) [veri.kategoriler[n + 1], veri.kategoriler[n]] = [k, veri.kategoriler[n + 1]];
+  if (b.dataset.is === "sil") {
+    const adet = veri.ilaclar.filter((i) => i.kategori === id).length;
+    if (!confirm(`"${k.ad}" kategorisi silinsin mi?` + (adet ? `\nİçindeki ${adet} ilaç silinmez, "Kategorisiz" olur.` : ""))) return;
+    veri.kategoriler.splice(n, 1);
+    veri.ilaclar.forEach((i) => { if (i.kategori === id) i.kategori = ""; });
+  }
+  kaydet(); ilacCiz();
+});
+function katEkle() {
+  const ad = $("#katYeni").value.trim();
+  if (!ad) { $("#katYeni").focus(); return; }
+  if (veri.kategoriler.some((k) => kucuk(k.ad) === kucuk(ad))) { bildir("Bu kategori zaten var.", "uyari"); return; }
+  veri.kategoriler.push({ id: "k" + id(), ad });
+  $("#katYeni").value = "";
+  kaydet(); ilacCiz(); bildir("Kategori eklendi", "tamam");
+}
+$("#katEkleBtn").addEventListener("click", katEkle);
+$("#katYeni").addEventListener("keydown", (e) => { if (e.key === "Enter") katEkle(); });
 
 /* ---------------- sekmeler ---------------- */
 function sekmeAc(ad) {
@@ -118,14 +180,14 @@ function secimCiz() {
   const liste = [...veri.ilaclar].sort(sirala).filter((i) => eslesir(i, q) || secili.includes(i.id));
   secili = secili.filter((sid) => veri.ilaclar.some((i) => i.id === sid));
   $("#secimBos").classList.toggle("gizli", veri.ilaclar.length > 0);
-  $("#secimListe").innerHTML = liste.map((i) => {
+  $("#secimListe").innerHTML = kategoriGruplari(liste).map((g) => `<div class="grup">${grupBaslik(g)}<div class="secim-liste">${g.ilaclar.map((i) => {
     const s = secili.indexOf(i.id);
     return `<label class="secim${s >= 0 ? " secili" : ""}" data-id="${i.id}">
       <input type="checkbox" ${s >= 0 ? "checked" : ""}>
       <div><div class="secim-ad">${esc(i.ad)}<span class="sira">${s + 1}</span></div>
       <div class="secim-alt">${esc(ilkSatir(i.nasil))}</div></div>
     </label>`;
-  }).join("");
+  }).join("")}</div></div>`).join("");
   if (veri.ilaclar.length && !liste.length) $("#secimListe").innerHTML = `<p class="bos">“${esc(q)}” ile eşleşen ilaç yok.</p>`;
   $("#seciliSayi").textContent = secili.length + " seçili";
   musteriListesi();
@@ -164,7 +226,10 @@ $("#olusturBtn").addEventListener("click", () => {
     tarih: $("#mTarih").value || bugun(),
     not: $("#mNot").value.trim(),
     // talimat basıldığı andaki ilaç bilgisi saklanır; ilaç sonra değişse de eski talimat aynı kalır
-    ilaclar: secili.map((sid) => Object.assign({}, veri.ilaclar.find((i) => i.id === sid))),
+    ilaclar: secili.map((sid) => {
+      const i = veri.ilaclar.find((x) => x.id === sid);
+      return Object.assign({}, i, { kategoriAd: katAd(i.kategori) });
+    }),
     olusturma: new Date().toISOString()
   };
   veri.talimatlar.unshift(talimat);
@@ -179,7 +244,24 @@ const VARSAYILAN_LOGO = "icons/logo.png";
 function talimatHTML(r) {
   const a = veri.ayar;
   const uyarilar = String(a.uyari || "").split("\n").map((s) => s.trim()).filter(Boolean);
-  const ilaclar = r.ilaclar.map((i, n) => {
+  // seçim sırasına göre bloklar: aynı kategorideki ilaçlar tek başlık altında, kategorisizler tek tek
+  const bloklar = [];
+  for (const i of r.ilaclar) {
+    const blok = i.kategoriAd && bloklar.find((b) => b.kategori === i.kategoriAd);
+    if (blok) blok.ilaclar.push(i);
+    else bloklar.push({ kategori: i.kategoriAd || "", ilaclar: [i] });
+  }
+  const satirlar = (t) => String(t || "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const kalem = (i) => {
+    const a = satirlar(i.nasil);
+    if (a.length <= 1) return `<div class="r-kalem"><b>${esc(i.ad)}</b>${a.length ? " — " + esc(a[0]) : ""}</div>`;
+    return `<div class="r-kalem"><b>${esc(i.ad)}</b><ul class="r-alt-adim">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  };
+  const ilaclar = bloklar.map((b, n) => b.kategori ? `<div class="r-ilac">
+      <div class="r-ilac-bas"><span class="r-no">${n + 1}</span><span class="r-ilac-ad r-kat">${esc(b.kategori)}</span></div>
+      <div class="r-ilac-govde">${b.ilaclar.map(kalem).join("")}</div></div>` : tekIlac(b.ilaclar[0], n)).join("");
+
+  function tekIlac(i, n) {
     const bilgiler = [["Doz", i.doz], ["Su miktarı", i.su], ["Ne zaman", i.zaman], ["Hangi üründe / neye karşı", i.neye], ["Etken madde", i.etken], ["Hasada kalan süre", i.bekleme]]
       .filter(([, d]) => d && String(d).trim())
       .map(([e, d]) => `<div class="r-bilgi"><span class="r-etiket">${e}</span><div>${esc(d)}</div></div>`).join("");
@@ -191,7 +273,7 @@ function talimatHTML(r) {
         ${adimlar.length ? `<span class="r-etiket">Nasıl kullanılır</span><ol class="r-adimlar">${adimlar.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
         ${i.dikkat ? `<div class="r-dikkat">${ik("uyari")}${esc(i.dikkat)}</div>` : ""}
       </div></div>`;
-  }).join("");
+  }
 
   return `<div class="a4">
     <div class="r-bas">
@@ -207,7 +289,7 @@ function talimatHTML(r) {
     </div>
     <div class="r-musteri">
       <div><span class="r-etiket">Sayın</span><b>${esc(r.musteri)}</b></div>
-      <div><span class="r-etiket">İlaç sayısı</span><b>${r.ilaclar.length}</b></div>
+      <div><span class="r-etiket">İlaçlama sayısı</span><b>${bloklar.length}</b></div>
     </div>
     ${r.not ? `<div class="r-not">${esc(r.not)}</div>` : ""}
     ${ilaclar}
@@ -243,7 +325,7 @@ function ilacCiz() {
   const liste = [...veri.ilaclar].sort(sirala).filter((i) => eslesir(i, q));
   $("#ilacSayi").textContent = veri.ilaclar.length;
   $("#ilacBos").classList.toggle("gizli", veri.ilaclar.length > 0);
-  $("#ilacListe").innerHTML = liste.map((i) => `
+  $("#ilacListe").innerHTML = kategoriGruplari(liste).map((g) => `<div class="grup">${grupBaslik(g)}<div class="ilac-liste">${g.ilaclar.map((i) => `
     <div class="ilac-satir" data-id="${i.id}">
       <span class="avatar">${ik("sise")}</span>
       <div class="ilac-bilgi">
@@ -252,7 +334,8 @@ function ilacCiz() {
       </div>
       ${!i.nasil ? '<span class="eksik">Kullanım bilgisi yok</span>' : ""}
       <span class="ok-ikon">${ik("kalem")}</span>
-    </div>`).join("");
+    </div>`).join("")}</div></div>`).join("");
+  katCiz();
   if (veri.ilaclar.length && !liste.length) $("#ilacListe").innerHTML = `<p class="bos">“${esc(q)}” ile eşleşen ilaç yok.</p>`;
 }
 $("#iAra").addEventListener("input", ilacCiz);
@@ -264,12 +347,16 @@ $("#yeniIlacBtn").addEventListener("click", () => ilacPencereAc(null));
 
 const ALANLAR = { ad: "#fAd", nasil: "#fNasil" };
 let duzenlenen = null;
+let sonKategori = ""; // yeni ilaçta son seçilen kategori hatırlanır
 
 function ilacPencereAc(iid) {
   duzenlenen = iid;
   const i = iid ? veri.ilaclar.find((x) => x.id === iid) : null;
   $("#ilacBaslik").textContent = i ? "İlacı düzenle" : "Yeni ilaç";
   for (const [k, s] of Object.entries(ALANLAR)) $(s).value = i?.[k] || "";
+  $("#fKat").innerHTML = '<option value="">Kategorisiz</option>' + veri.kategoriler.map((k) => `<option value="${k.id}">${esc(k.ad)}</option>`).join("");
+  $("#fKat").value = (i ? i.kategori : sonKategori) || "";
+  if ($("#fKat").selectedIndex < 0) $("#fKat").value = "";
   $("#ilacSil").classList.toggle("gizli", !i);
   $("#ilacPencere").showModal();
   $("#fAd").focus();
@@ -279,6 +366,8 @@ $("#ilacForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const kayit = {};
   for (const [k, s] of Object.entries(ALANLAR)) kayit[k] = $(s).value.trim();
+  kayit.kategori = $("#fKat").value;
+  sonKategori = kayit.kategori;
   if (!kayit.ad) { $("#fAd").focus(); return; }
   const ayni = veri.ilaclar.find((x) => kucuk(x.ad) === kucuk(kayit.ad) && x.id !== duzenlenen);
   if (ayni && !confirm(`"${ayni.ad}" adında bir ilaç zaten var. Yine de kaydedilsin mi?`)) return;
@@ -405,7 +494,7 @@ $("#yedekYukle").addEventListener("change", async (e) => {
     const liste = eskiListe(v);
     if (!Array.isArray(v.ilaclar) || !liste) throw new Error("biçim");
     if (!confirm(`Yedekte ${v.ilaclar.length} ilaç ve ${liste.length} talimat var.\nŞu anki bilgiler bunlarla DEĞİŞTİRİLSİN mi?`)) return;
-    veri = { ilaclar: v.ilaclar, talimatlar: liste, ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}), sonYedek: v.sonYedek || null };
+    veri = { ilaclar: v.ilaclar, talimatlar: liste, kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(), ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}), sonYedek: v.sonYedek || null };
     kaydet(); ayarDoldur(); secili = [];
     bildir("Yedek yüklendi", "tamam");
   } catch (err) {
