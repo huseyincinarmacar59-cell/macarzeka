@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.7.0";
+const SURUM = "1.8.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -288,47 +288,17 @@ const VARSAYILAN_LOGO = "icons/logo.png";
 function talimatHTML(r) {
   const a = veri.ayar;
   const uyarilar = String(a.uyari || "").split("\n").map((s) => s.trim()).filter(Boolean);
-  // seçim sırasına göre bloklar: aynı kategorideki ilaçlar tek başlık altında, kategorisizler tek tek
-  const blokla = (liste) => {
-    const bloklar = [];
-    for (const i of liste) {
-      const blok = i.kategoriAd && bloklar.find((b) => b.kategori === i.kategoriAd);
-      if (blok) blok.ilaclar.push(i);
-      else bloklar.push({ kategori: i.kategoriAd || "", ilaclar: [i] });
-    }
-    return bloklar;
-  };
   const turListe = Array.isArray(r.turlar) && r.turlar.length ? r.turlar : [{ not: "", ilaclar: r.ilaclar }];
-  const cokTur = turListe.length > 1;
-  const bloklar = blokla(r.ilaclar);
   const satirlar = (t) => String(t || "").split("\n").map((x) => x.trim()).filter(Boolean);
   const kalem = (i) => {
     const a = satirlar(i.nasil);
     if (a.length <= 1) return `<div class="r-kalem"><b>${esc(i.ad)}</b>${a.length ? " — " + esc(a[0]) : ""}</div>`;
     return `<div class="r-kalem"><b>${esc(i.ad)}</b><ul class="r-alt-adim">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
   };
-  const blokHTML = (bl) => bl.map((b, n) => b.kategori ? `<div class="r-ilac">
-      <div class="r-ilac-bas"><span class="r-no">${n + 1}</span><span class="r-ilac-ad r-kat">${esc(b.kategori)}</span></div>
-      <div class="r-ilac-govde">${b.ilaclar.map(kalem).join("")}</div></div>` : tekIlac(b.ilaclar[0], n)).join("");
-  const ilaclar = cokTur
-    ? turListe.map((t, n) => `<div class="r-tur">
-        <div class="r-tur-bas"><span>${n + 1}. İlaçlama</span>${t.not ? `<span class="r-tur-not">${esc(t.not)}</span>` : ""}</div>
-        ${blokHTML(blokla(t.ilaclar))}</div>`).join("")
-    : blokHTML(bloklar);
-
-  function tekIlac(i, n) {
-    const bilgiler = [["Doz", i.doz], ["Su miktarı", i.su], ["Ne zaman", i.zaman], ["Hangi üründe / neye karşı", i.neye], ["Etken madde", i.etken], ["Hasada kalan süre", i.bekleme]]
-      .filter(([, d]) => d && String(d).trim())
-      .map(([e, d]) => `<div class="r-bilgi"><span class="r-etiket">${e}</span><div>${esc(d)}</div></div>`).join("");
-    const adimlar = String(i.nasil || "").split("\n").map((s) => s.trim()).filter(Boolean);
-    return `<div class="r-ilac">
-      <div class="r-ilac-bas"><span class="r-no">${n + 1}</span><span class="r-ilac-ad">${esc(i.ad)}</span><span class="r-ilac-tur">${esc(i.tur || "")}</span></div>
-      <div class="r-ilac-govde">
-        ${bilgiler ? `<div class="r-bilgiler">${bilgiler}</div>` : ""}
-        ${adimlar.length ? `<span class="r-etiket">Nasıl kullanılır</span><ol class="r-adimlar">${adimlar.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
-        ${i.dikkat ? `<div class="r-dikkat">${ik("uyari")}${esc(i.dikkat)}</div>` : ""}
-      </div></div>`;
-  }
+  // kâğıtta kategori yok: her ilaçlama kendi kutusunda, içinde ilaçlar alt alta
+  const ilaclar = turListe.map((t, n) => `<div class="r-ilac r-tur-kutu">
+      <div class="r-ilac-bas"><span class="r-ilac-ad r-tur-ad">${n + 1}. İlaçlama</span>${t.not ? `<span class="r-tur-not">${esc(t.not)}</span>` : ""}</div>
+      <div class="r-ilac-govde">${t.ilaclar.map(kalem).join("")}</div></div>`).join("");
 
   return `<div class="a4">
     <div class="r-bas">
@@ -344,7 +314,7 @@ function talimatHTML(r) {
     </div>
     <div class="r-musteri">
       <div><span class="r-etiket">Sayın</span><b>${esc(r.musteri)}</b></div>
-      <div><span class="r-etiket">İlaçlama sayısı</span><b>${cokTur ? turListe.length : bloklar.length}</b></div>
+      <div><span class="r-etiket">İlaçlama sayısı</span><b>${turListe.length}</b></div>
     </div>
     ${r.not ? `<div class="r-not">${esc(r.not)}</div>` : ""}
     ${ilaclar}

@@ -349,3 +349,10 @@ input[type=search]:focus { background-color: #fff; }
 .r-tur + .r-tur { margin-top: 14px; padding-top: 10px; border-top: 2px dashed #b9cbbf; }
 .r-tur-bas { display: flex; align-items: baseline; gap: 10px; font-size: 13.5pt; font-weight: 800; color: var(--yesil); text-transform: uppercase; letter-spacing: .5px; break-after: avoid; page-break-after: avoid; }
 .r-tur-not { font-size: 10pt; font-weight: 600; color: #6b5a2a; text-transform: none; letter-spacing: 0; }
+
+/* Kâğıt: her ilaçlama bir kutu */
+.r-tur-kutu { margin-top: 10px; border: 1.5px solid #9fbaa8; }
+.r-tur-kutu .r-ilac-bas { background: var(--yesil-acik); padding: 7px 12px; }
+.r-tur-ad { text-transform: uppercase; letter-spacing: .5px; color: var(--yesil); font-size: 12.5pt; }
+.r-tur-kutu .r-tur-not { margin-left: auto; }
+.r-tur-kutu .r-kalem { padding: 4px 0; font-size: 11pt; }
