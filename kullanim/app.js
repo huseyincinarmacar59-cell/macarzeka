@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.6.0";
+const SURUM = "1.7.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -173,32 +173,73 @@ function sekmeAc(ad) {
 $$(".sekme").forEach((b) => b.addEventListener("click", () => sekmeAc(b.dataset.sekme)));
 
 /* ---------------- kullanım yaz ---------------- */
-let secili = []; // seçim sırası korunur
+// Her ilaçlamanın kendi seçim listesi var (sıra korunur). Aynı ilaç iki ilaçlamada da olabilir.
+let turlar = [{ not: "", ids: [] }];
+let aktif = 0;
+const yeniTurlar = () => [{ not: "", ids: [] }];
+const tumSecili = () => turlar.flatMap((t) => t.ids);
+
+function turCiz() {
+  const tekli = turlar.length === 1;
+  $("#turCubuk").innerHTML = turlar.map((t, n) => `<button type="button" class="tur-btn${n === aktif ? " aktif" : ""}" data-tur="${n}">
+      ${n + 1}. İlaçlama <span class="tur-sayi">${t.ids.length}</span></button>`).join("")
+    + `<button type="button" class="tur-btn tur-ekle" id="turEkle">${ik("arti")}İlaçlama ekle</button>`;
+  $("#turAlt").classList.toggle("gizli", tekli);
+  if (!tekli) {
+    $("#turNot").value = turlar[aktif].not;
+    $("#turNot").placeholder = aktif === 0 ? "Not (isteğe bağlı), ör. Hemen" : "Not (isteğe bağlı), ör. İlkinden 15 gün sonra";
+    $("#turSil").textContent = `${aktif + 1}. ilaçlamayı kaldır`;
+  }
+}
 
 function secimCiz() {
   const q = $("#rAra").value.trim();
-  const liste = [...veri.ilaclar].sort(sirala).filter((i) => eslesir(i, q) || secili.includes(i.id));
-  secili = secili.filter((sid) => veri.ilaclar.some((i) => i.id === sid));
+  const var_ = new Set(veri.ilaclar.map((i) => i.id));
+  turlar.forEach((t) => { t.ids = t.ids.filter((x) => var_.has(x)); });
+  const ids = turlar[aktif].ids;
+  const liste = [...veri.ilaclar].sort(sirala).filter((i) => eslesir(i, q) || ids.includes(i.id));
   $("#secimBos").classList.toggle("gizli", veri.ilaclar.length > 0);
   $("#secimListe").innerHTML = kategoriGruplari(liste).map((g) => `<div class="grup">${grupBaslik(g)}<div class="secim-liste">${g.ilaclar.map((i) => {
-    const s = secili.indexOf(i.id);
+    const s = ids.indexOf(i.id);
+    const digerleri = turlar.map((t, n) => (n !== aktif && t.ids.includes(i.id) ? n + 1 : 0)).filter(Boolean);
     return `<label class="secim${s >= 0 ? " secili" : ""}" data-id="${i.id}">
       <input type="checkbox" ${s >= 0 ? "checked" : ""}>
       <div><div class="secim-ad">${esc(i.ad)}<span class="sira">${s + 1}</span></div>
-      <div class="secim-alt">${esc(ilkSatir(i.nasil))}</div></div>
+      <div class="secim-alt">${esc(ilkSatir(i.nasil))}</div>
+      ${digerleri.length ? `<div class="secim-diger">${digerleri.map((n) => n + ".").join(", ")} ilaçlamada da var</div>` : ""}</div>
     </label>`;
   }).join("")}</div></div>`).join("");
   if (veri.ilaclar.length && !liste.length) $("#secimListe").innerHTML = `<p class="bos">“${esc(q)}” ile eşleşen ilaç yok.</p>`;
-  $("#seciliSayi").textContent = secili.length + " seçili";
+  $("#seciliSayi").textContent = tumSecili().length + " seçili";
+  turCiz();
   musteriListesi();
 }
 
 $("#secimListe").addEventListener("change", (e) => {
   const kutu = e.target.closest(".secim");
   if (!kutu) return;
-  const sid = kutu.dataset.id;
-  if (e.target.checked) { if (!secili.includes(sid)) secili.push(sid); }
-  else secili = secili.filter((x) => x !== sid);
+  const sid = kutu.dataset.id, t = turlar[aktif];
+  if (e.target.checked) { if (!t.ids.includes(sid)) t.ids.push(sid); }
+  else t.ids = t.ids.filter((x) => x !== sid);
+  secimCiz();
+});
+$("#turCubuk").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.id === "turEkle") {
+    turlar.push({ not: "", ids: [] });
+    aktif = turlar.length - 1;
+    bildir(`${aktif + 1}. ilaçlama açıldı, ilaçlarını işaretleyin`, "tamam");
+  } else aktif = +b.dataset.tur;
+  secimCiz();
+});
+$("#turNot").addEventListener("input", (e) => { turlar[aktif].not = e.target.value; });
+$("#turSil").addEventListener("click", () => {
+  if (turlar.length < 2) return;
+  const t = turlar[aktif];
+  if (t.ids.length && !confirm(`${aktif + 1}. ilaçlama ve içindeki ${t.ids.length} ilaç seçimi kaldırılsın mı?`)) return;
+  turlar.splice(aktif, 1);
+  aktif = Math.max(0, aktif - 1);
   secimCiz();
 });
 $("#rAra").addEventListener("input", secimCiz);
@@ -211,7 +252,7 @@ function musteriListesi() {
 function formuTemizle() {
   $("#mAd").value = ""; $("#mNot").value = "";
   $("#mTarih").value = bugun(); $("#rAra").value = "";
-  secili = [];
+  turlar = yeniTurlar(); aktif = 0;
   secimCiz();
 }
 $("#temizleBtn").addEventListener("click", formuTemizle);
@@ -219,17 +260,20 @@ $("#temizleBtn").addEventListener("click", formuTemizle);
 $("#olusturBtn").addEventListener("click", () => {
   const musteri = $("#mAd").value.trim();
   if (!musteri) { bildir("Müşterinin adını yazın.", "uyari"); $("#mAd").focus(); return; }
-  if (!secili.length) { bildir("En az bir ilaç işaretleyin.", "uyari"); return; }
+  if (!tumSecili().length) { bildir("En az bir ilaç işaretleyin.", "uyari"); return; }
+  // talimat basıldığı andaki ilaç bilgisi saklanır; ilaç sonra değişse de eski talimat aynı kalır
+  const anlik = (sid) => {
+    const i = veri.ilaclar.find((x) => x.id === sid);
+    return Object.assign({}, i, { kategoriAd: katAd(i.kategori) });
+  };
+  const doluTurlar = turlar.filter((t) => t.ids.length).map((t) => ({ not: t.not.trim(), ilaclar: t.ids.map(anlik) }));
   const talimat = {
     id: id(),
     musteri,
     tarih: $("#mTarih").value || bugun(),
     not: $("#mNot").value.trim(),
-    // talimat basıldığı andaki ilaç bilgisi saklanır; ilaç sonra değişse de eski talimat aynı kalır
-    ilaclar: secili.map((sid) => {
-      const i = veri.ilaclar.find((x) => x.id === sid);
-      return Object.assign({}, i, { kategoriAd: katAd(i.kategori) });
-    }),
+    ilaclar: doluTurlar.flatMap((t) => t.ilaclar),
+    turlar: doluTurlar,
     olusturma: new Date().toISOString()
   };
   veri.talimatlar.unshift(talimat);
@@ -245,21 +289,32 @@ function talimatHTML(r) {
   const a = veri.ayar;
   const uyarilar = String(a.uyari || "").split("\n").map((s) => s.trim()).filter(Boolean);
   // seçim sırasına göre bloklar: aynı kategorideki ilaçlar tek başlık altında, kategorisizler tek tek
-  const bloklar = [];
-  for (const i of r.ilaclar) {
-    const blok = i.kategoriAd && bloklar.find((b) => b.kategori === i.kategoriAd);
-    if (blok) blok.ilaclar.push(i);
-    else bloklar.push({ kategori: i.kategoriAd || "", ilaclar: [i] });
-  }
+  const blokla = (liste) => {
+    const bloklar = [];
+    for (const i of liste) {
+      const blok = i.kategoriAd && bloklar.find((b) => b.kategori === i.kategoriAd);
+      if (blok) blok.ilaclar.push(i);
+      else bloklar.push({ kategori: i.kategoriAd || "", ilaclar: [i] });
+    }
+    return bloklar;
+  };
+  const turListe = Array.isArray(r.turlar) && r.turlar.length ? r.turlar : [{ not: "", ilaclar: r.ilaclar }];
+  const cokTur = turListe.length > 1;
+  const bloklar = blokla(r.ilaclar);
   const satirlar = (t) => String(t || "").split("\n").map((x) => x.trim()).filter(Boolean);
   const kalem = (i) => {
     const a = satirlar(i.nasil);
     if (a.length <= 1) return `<div class="r-kalem"><b>${esc(i.ad)}</b>${a.length ? " — " + esc(a[0]) : ""}</div>`;
     return `<div class="r-kalem"><b>${esc(i.ad)}</b><ul class="r-alt-adim">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
   };
-  const ilaclar = bloklar.map((b, n) => b.kategori ? `<div class="r-ilac">
+  const blokHTML = (bl) => bl.map((b, n) => b.kategori ? `<div class="r-ilac">
       <div class="r-ilac-bas"><span class="r-no">${n + 1}</span><span class="r-ilac-ad r-kat">${esc(b.kategori)}</span></div>
       <div class="r-ilac-govde">${b.ilaclar.map(kalem).join("")}</div></div>` : tekIlac(b.ilaclar[0], n)).join("");
+  const ilaclar = cokTur
+    ? turListe.map((t, n) => `<div class="r-tur">
+        <div class="r-tur-bas"><span>${n + 1}. İlaçlama</span>${t.not ? `<span class="r-tur-not">${esc(t.not)}</span>` : ""}</div>
+        ${blokHTML(blokla(t.ilaclar))}</div>`).join("")
+    : blokHTML(bloklar);
 
   function tekIlac(i, n) {
     const bilgiler = [["Doz", i.doz], ["Su miktarı", i.su], ["Ne zaman", i.zaman], ["Hangi üründe / neye karşı", i.neye], ["Etken madde", i.etken], ["Hasada kalan süre", i.bekleme]]
@@ -289,7 +344,7 @@ function talimatHTML(r) {
     </div>
     <div class="r-musteri">
       <div><span class="r-etiket">Sayın</span><b>${esc(r.musteri)}</b></div>
-      <div><span class="r-etiket">İlaçlama sayısı</span><b>${bloklar.length}</b></div>
+      <div><span class="r-etiket">İlaçlama sayısı</span><b>${cokTur ? turListe.length : bloklar.length}</b></div>
     </div>
     ${r.not ? `<div class="r-not">${esc(r.not)}</div>` : ""}
     ${ilaclar}
@@ -386,7 +441,7 @@ $("#ilacSil").addEventListener("click", () => {
   const i = veri.ilaclar.find((x) => x.id === duzenlenen);
   if (!i || !confirm(`"${i.ad}" silinsin mi? (Eski talimatlar etkilenmez.)`)) return;
   veri.ilaclar = veri.ilaclar.filter((x) => x.id !== duzenlenen);
-  secili = secili.filter((x) => x !== duzenlenen);
+  turlar.forEach((t) => { t.ids = t.ids.filter((x) => x !== duzenlenen); });
   kaydet();
   $("#ilacPencere").close();
   ilacCiz();
@@ -426,9 +481,12 @@ $("#gecmisListe").addEventListener("click", (e) => {
     sekmeAc("kullanim");
     $("#mAd").value = r.musteri; $("#mNot").value = r.not || "";
     $("#mTarih").value = bugun();
-    secili = r.ilaclar.map((i) => i.id).filter((sid) => veri.ilaclar.some((x) => x.id === sid));
+    const varMi = (sid) => veri.ilaclar.some((x) => x.id === sid);
+    const kaynak = Array.isArray(r.turlar) && r.turlar.length ? r.turlar : [{ not: "", ilaclar: r.ilaclar }];
+    turlar = kaynak.map((t) => ({ not: t.not || "", ids: t.ilaclar.map((i) => i.id).filter(varMi) }));
+    aktif = 0;
     secimCiz();
-    const eksik = r.ilaclar.length - secili.length;
+    const eksik = r.ilaclar.length - tumSecili().length;
     bildir(eksik ? `${eksik} ilaç listeden silinmiş, onlar seçilmedi.` : "İlaçlar seçildi, kontrol edip oluşturun.");
   }
 });
@@ -495,7 +553,7 @@ $("#yedekYukle").addEventListener("change", async (e) => {
     if (!Array.isArray(v.ilaclar) || !liste) throw new Error("biçim");
     if (!confirm(`Yedekte ${v.ilaclar.length} ilaç ve ${liste.length} talimat var.\nŞu anki bilgiler bunlarla DEĞİŞTİRİLSİN mi?`)) return;
     veri = { ilaclar: v.ilaclar, talimatlar: liste, kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(), ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}), sonYedek: v.sonYedek || null };
-    kaydet(); ayarDoldur(); secili = [];
+    kaydet(); ayarDoldur(); turlar = yeniTurlar(); aktif = 0;
     bildir("Yedek yüklendi", "tamam");
   } catch (err) {
     bildir("Bu dosya geçerli bir Macar Talimat yedeği değil.", "uyari");

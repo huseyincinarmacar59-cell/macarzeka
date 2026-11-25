@@ -333,3 +333,19 @@ input[type=search]:focus { background-color: #fff; }
 .r-kalem { padding: 3px 0; border-bottom: 1px dashed #e1e7e3; }
 .r-kalem:last-child { border-bottom: 0; }
 .r-alt-adim { margin: 2px 0 0; padding-left: 18px; }
+
+/* İlaçlamalar (1. / 2. ilaçlama) */
+.tur-cubuk { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.tur-btn { font: inherit; font-weight: 600; border: 1.5px solid var(--cizgi); background: rgba(255,255,255,.7); color: var(--yesil); border-radius: 99px; padding: 8px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.tur-btn:hover { border-color: var(--yesil); }
+.tur-btn.aktif { background: var(--yesil); color: #fff; border-color: var(--yesil); }
+.tur-sayi { font-size: 12px; background: var(--yesil-acik); color: var(--yesil); border-radius: 99px; padding: 0 7px; }
+.tur-btn.aktif .tur-sayi { background: rgba(255,255,255,.25); color: #fff; }
+.tur-ekle { border-style: dashed; }
+.tur-alt { display: flex; gap: 8px; align-items: center; margin: -4px 0 14px; }
+.tur-alt input { flex: 1; }
+.secim-diger { font-size: 11px; color: var(--altin); margin-top: 3px; font-weight: 600; }
+.r-tur { margin-top: 10px; }
+.r-tur + .r-tur { margin-top: 14px; padding-top: 10px; border-top: 2px dashed #b9cbbf; }
+.r-tur-bas { display: flex; align-items: baseline; gap: 10px; font-size: 13.5pt; font-weight: 800; color: var(--yesil); text-transform: uppercase; letter-spacing: .5px; break-after: avoid; page-break-after: avoid; }
+.r-tur-not { font-size: 10pt; font-weight: 600; color: #6b5a2a; text-transform: none; letter-spacing: 0; }
