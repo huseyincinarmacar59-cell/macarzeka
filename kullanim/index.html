@@ -424,6 +424,7 @@
     <button class="sekme" data-sekme="gecmis"><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg><span>Geçmiş</span></button>
     <button class="sekme" data-sekme="ayarlar"><svg class="ik" aria-hidden="true"><use href="#i-ayar"/></svg><span>Ayarlar</span></button>
   </nav>
+  <button id="klsCip" class="kls-cip gizli" data-kls="cip" type="button"></button>
   <button id="kurBtn" class="btn ince gizli"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Uygulama olarak yükle</button>
 </header>
 
@@ -532,6 +533,11 @@
     </div>
 
     <div class="kart">
+      <h2><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg>Kayıt klasörü</h2>
+      <div id="klsAyar"><p class="aciklama">Yükleniyor…</p></div>
+    </div>
+
+    <div class="kart">
       <h2>Yedekleme</h2>
       <p class="aciklama">İlaçlar ve geçmiş talimatlar bu bilgisayarda saklanır. Arada bir yedek alıp USB'ye ya da WhatsApp'a atın; bilgisayar değişirse yedekten geri yüklersiniz.</p>
       <div class="satir">
@@ -590,5 +596,6 @@
 <div id="bildirim" class="bildirim no-print"></div>
 
 <script src="app.js"></script>
+<script src="klasor.js"></script>
 </body>
 </html>

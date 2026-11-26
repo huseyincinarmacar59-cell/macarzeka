@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.8.0";
+const SURUM = "1.9.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -48,7 +48,8 @@ function yukle() {
         talimatlar: eskiListe(v) || [],
         kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(),
         ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}),
-        sonYedek: v.sonYedek || null
+        sonYedek: v.sonYedek || null,
+        kz: v.kz || 0
       };
     }
   } catch (e) { console.error("Veri okunamadı", e); }
@@ -57,7 +58,9 @@ function yukle() {
 
 function kaydet() {
   try {
+    if (window.KlasorKayit) KlasorKayit.damgala();
     localStorage.setItem(ANAHTAR, JSON.stringify(veri));
+    if (window.KlasorKayit) KlasorKayit.yaz();   // seçilen klasördeki dosyaya da yaz
     return true;
   } catch (e) {
     console.error(e);

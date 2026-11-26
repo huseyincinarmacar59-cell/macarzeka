@@ -16,7 +16,12 @@ Güncellemeler kendiliğinden gelir; program açıkken "Yeni güncelleme hazır"
 
 ## Veriler
 
-İlaçlar ve talimatlar o bilgisayarda saklanır. **Ayarlar → Yedek al** ile arada bir yedek alın.
+İlk açılışta program bir kere **kayıt klasörü** sorar (ör. Belgeler\Macar Talimat Kayıtlar). Ondan sonra
+her değişiklikte o klasördeki `macar-talimat-veriler.json` güncellenir ve her gün `yedekler\` içine bir
+kopya alınır (son 60 gün). Tarayıcı verisi silinse bile aynı klasör seçilince ilaçlar ve talimatlar geri gelir.
+Dosya adı MacarZeka'nınkinden farklıdır; ikisi aynı klasöre kaydedilse de karışmaz.
+
+Klasör seçilmezse bilgiler yalnızca tarayıcıda durur; o zaman **Ayarlar → Yedek al** ile arada bir yedek alın.
 
 ## Geliştirici notu
 

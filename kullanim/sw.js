@@ -1,6 +1,6 @@
 /* Macar Talimat service worker — çevrimdışı çalışma + otomatik güncelleme */
-const SURUM = "macar-talimat-1.8.0";
-const DOSYALAR = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest",
+const SURUM = "macar-talimat-1.9.0";
+const DOSYALAR = ["./", "index.html", "style.css", "app.js", "klasor.js", "manifest.webmanifest",
   "icons/logo.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 
 self.addEventListener("install", (e) => {
