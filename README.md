@@ -8,16 +8,18 @@ Ziraat mühendisleri için müşteri, satış, ödeme ve borç takip programı.
 |---|---|---|
 | **Adres** | [macarzeka'yı aç](https://huseyincinarmacar59-cell.github.io/macarzeka/) | [indir](https://github.com/huseyincinarmacar59-cell/macarzeka/releases/latest/download/MacarZeka-Windows-64bit.zip) |
 | Kurulum | yok, linke tıkla | zip'i aç, çift tıkla |
-| Kayıtlar nerede | tarayıcı hafızasında | klasörde dosya olarak |
-| Günlük otomatik yedek | yok | var |
+| Kayıtlar nerede | seçtiğin klasörde `veriler.json` (Edge/Chrome) + tarayıcı hafızası | klasörde dosya olarak |
+| Günlük otomatik yedek | var (klasör seçildiyse) | var |
 | Sesli kayıt | yok | var |
 | Akıllı soru-cevap (Gemini) | yok | var |
 | Kendi kendine güncelleme | sayfayı yenilemek yeter | var |
 | Ne için uygun | denemek, göstermek | gerçek kullanım |
 
-> **Tarayıcı sürümünde dikkat:** kayıtlar yalnızca o tarayıcıda durur.
-> Tarayıcı verisi temizlenirse silinir ve başka bilgisayarda görünmez.
-> Gerçek müşteri defteri için Windows programını kullan.
+> **Tarayıcı sürümünde kayıt klasörü:** ilk açılışta bir klasör seçilir
+> (ör. Belgeler\MacarZeka Kayıtlar). Her değişiklikte o klasördeki
+> `veriler.json` güncellenir, her gün `yedekler\` içine bir kopya alınır
+> (son 60 gün). Tarayıcı verisi silinse bile aynı klasör seçilince kayıtlar
+> geri gelir. Klasör seçilmezse kayıtlar yalnızca tarayıcıda durur.
 
 ## Ne yapar
 

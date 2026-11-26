@@ -31,6 +31,7 @@ async def main():
         for ad in ["A", "B"]:
             ctx = await br.new_context(viewport={"width": 1360, "height": 880})
             await ctx.add_init_script(FAKE)
+            await ctx.add_init_script("delete window.showDirectoryPicker;")  # klasör seçme penceresi bu testi kapatmasın
             pg = await ctx.new_page()
             pg.on("pageerror", lambda e, ad=ad: (print(f"  [{ad} JS HATASI] {e}"), hatalar.append(f"{ad} JS: {e}")))
             pg.on("dialog", lambda d: asyncio.ensure_future(d.accept()))

@@ -2153,6 +2153,344 @@
 })();
 </script>
 <!-- ESITLEME-BITIS -->
+<!-- KLASOR-BASLA -->
+<script>
+/* ============================================================
+   MacarZeka (web sürümü) — kayıtları bilgisayarda bir klasöre yazma
+   ------------------------------------------------------------
+   * Bir kere klasör seçilir (ör. Belgeler\MacarZeka Kayıtlar).
+   * Her değişiklikte o klasördeki veriler.json güncellenir.
+   * Her gün yedekler\veriler-YYYY-AA-GG.json kopyası alınır (son 60 gün).
+   * Tarayıcı hafızası yine ikinci kopya olarak tutulur; açılışta hangisi
+     daha yeniyse o kullanılır. Edge verisi silinse bile klasör yerinde kalır.
+   * Yalnızca Edge/Chrome'da (File System Access) çalışır; Windows
+     programında (MASAUSTU) devre dışıdır, o zaten klasöre yazar.
+   ============================================================ */
+(function () {
+  "use strict";
+  var DB = "macarzeka-klasor", DEPO = "tutamak", ANAHTAR_T = "klasor";
+  var DOSYA = "veriler.json", YEDEK_DIZIN = "yedekler", YEDEK_SAYI = 60;
+
+  var dizin = null;          // FileSystemDirectoryHandle
+  var durum = "yok";         // yok | izin | acik | hata | desteksiz
+  var hata = "", sonYazma = "", bekleyen = false, zamanlayici = null;
+  var zincir = Promise.resolve(), yedekGunu = "";
+
+  function destekli() { return typeof window.showDirectoryPicker === "function" && !(typeof MASAUSTU !== "undefined" && MASAUSTU); }
+  function e(s) { return typeof esc === "function" ? esc(s) : String(s == null ? "" : s); }
+  function ik(ad) { return '<svg class="ik" aria-hidden="true"><use href="#' + ad + '"/></svg>'; }
+  function bildir(m) { if (typeof toast === "function") toast(m); }
+  function simdiSaat() { var d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function gun() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function tarihYaz(t) { if (!t) return "bilinmiyor"; var d = new Date(t); return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+
+  /* ---------- tutamağı hatırlama (IndexedDB) ---------- */
+  function dbAc() {
+    return new Promise(function (ok, red) {
+      var r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore(DEPO); };
+      r.onsuccess = function () { ok(r.result); };
+      r.onerror = function () { red(r.error); };
+    });
+  }
+  function dbAl() {
+    if (window.MZ_KLASOR_DEPO) return window.MZ_KLASOR_DEPO.al();   // test için
+    return dbAc().then(function (db) {
+      return new Promise(function (ok) {
+        var t = db.transaction(DEPO, "readonly").objectStore(DEPO).get(ANAHTAR_T);
+        t.onsuccess = function () { ok(t.result || null); }; t.onerror = function () { ok(null); };
+      });
+    }).catch(function () { return null; });
+  }
+  function dbKoy(v) {
+    if (window.MZ_KLASOR_DEPO) return window.MZ_KLASOR_DEPO.koy(v);
+    return dbAc().then(function (db) {
+      return new Promise(function (ok) {
+        var tx = db.transaction(DEPO, "readwrite");
+        if (v) tx.objectStore(DEPO).put(v, ANAHTAR_T); else tx.objectStore(DEPO).delete(ANAHTAR_T);
+        tx.oncomplete = function () { ok(true); }; tx.onerror = function () { ok(false); };
+      });
+    }).catch(function () { return false; });
+  }
+
+  /* ---------- dosya okuma / yazma ---------- */
+  function izinVar(h, iste) {
+    if (!h) return Promise.resolve(false);
+    var o = { mode: "readwrite" };
+    var q = h.queryPermission ? h.queryPermission(o) : Promise.resolve("granted");
+    return q.then(function (s) {
+      if (s === "granted") return true;
+      if (!iste || !h.requestPermission) return false;
+      return h.requestPermission(o).then(function (s2) { return s2 === "granted"; });
+    }).catch(function () { return false; });
+  }
+  function dosyaOku(h) {
+    return h.getFileHandle(DOSYA).then(function (f) { return f.getFile(); })
+      .then(function (f) { return f.text(); })
+      .then(function (t) {
+        var v = JSON.parse(t);
+        if (!v || !Array.isArray(v.musteriler) || !Array.isArray(v.satislar) || !Array.isArray(v.odemeler)) throw new Error("tanınmayan dosya");
+        return v;
+      })
+      .catch(function (er) { if (er && er.name === "NotFoundError") return null; throw er; });
+  }
+  function dosyaYaz(h, ad, metin) {
+    return h.getFileHandle(ad, { create: true }).then(function (f) { return f.createWritable(); })
+      .then(function (w) { return w.write(metin).then(function () { return w.close(); }); });
+  }
+  function gunlukYedek(metin) {
+    var g = gun();
+    if (yedekGunu === g) return Promise.resolve();
+    return dizin.getDirectoryHandle(YEDEK_DIZIN, { create: true }).then(function (y) {
+      var ad = "veriler-" + g + ".json";
+      return y.getFileHandle(ad).then(function () { yedekGunu = g; }, function () {
+        return dosyaYaz(y, ad, metin).then(function () { yedekGunu = g; return eskiYedekleriSil(y); });
+      });
+    }).catch(function () {});
+  }
+  function eskiYedekleriSil(y) {
+    if (!y.keys) return Promise.resolve();
+    var adlar = [];
+    var it = y.keys();
+    function dolas() {
+      return it.next().then(function (r) {
+        if (r.done) return;
+        if (/^veriler-\d{4}-\d{2}-\d{2}\.json$/.test(r.value)) adlar.push(r.value);
+        return dolas();
+      });
+    }
+    return dolas().then(function () {
+      adlar.sort();
+      var sil = adlar.slice(0, Math.max(0, adlar.length - YEDEK_SAYI));
+      return Promise.all(sil.map(function (a) { return y.removeEntry(a).catch(function () {}); }));
+    }).catch(function () {});
+  }
+
+  // Asıl yazma: sırayla, üst üste binmeden
+  function simdiYaz() {
+    if (!dizin || durum !== "acik") { bekleyen = true; return Promise.resolve(); }
+    bekleyen = false;
+    zincir = zincir.then(function () {
+      var metin = JSON.stringify(veri);
+      return dosyaYaz(dizin, DOSYA, metin).then(function () {
+        sonYazma = simdiSaat(); hata = "";
+        return gunlukYedek(metin);
+      });
+    }).catch(function (er) {
+      var ilk = durum !== "hata";
+      if (er && (er.name === "NotAllowedError" || er.name === "SecurityError")) { durum = "izin"; hata = ""; }
+      else { durum = "hata"; hata = (er && er.message) || "yazılamadı"; }
+      bekleyen = true;
+      if (ilk) bildir(durum === "izin" ? "Kayıt klasörüne erişim izni gerekiyor — sol alttan izin ver." : "DİKKAT: Klasöre yazılamadı — " + hata);
+    }).then(function () { if (typeof durumYaz === "function") durumYaz(); arayuz(); });
+    return zincir;
+  }
+  function yaz() {
+    if (!destekli()) return;
+    if (durum !== "acik") { bekleyen = true; return; }
+    clearTimeout(zamanlayici);
+    zamanlayici = setTimeout(simdiYaz, 250);
+  }
+  // Kayıt zamanı (kz): hangi kopya daha yeni anlaşılsın. kaydet() tarayıcıya yazmadan önce çağırır.
+  function damgala() { if (destekli() && veri) veri.kz = Date.now(); }
+
+  /* ---------- açılış ---------- */
+  function hafizayaKoyVeYenile(v) {
+    try { localStorage.setItem(typeof ANAHTAR !== "undefined" ? ANAHTAR : "macarzeka_veri_v1", JSON.stringify(v)); } catch (er) {}
+    location.reload();
+  }
+  // Klasördeki kopya ile tarayıcıdakini karşılaştırır. true: sayfa yenilenecek
+  function karsilastir(dosya, acilista) {
+    var yerelKz = (veri && veri.kz) || 0, yerelBos = !veri || !veri.musteriler || veri.musteriler.length === 0;
+    if (!dosya) { simdiYaz(); return false; }
+    if ((dosya.kz || 0) > yerelKz || (yerelBos && dosya.musteriler.length)) {
+      if (acilista) {
+        var lis = veri && veri.lisans;
+        veri = dosya; if (lis && !veri.lisans) veri.lisans = lis;
+        if (typeof hafizayaYaz === "function") hafizayaYaz();
+        return false;
+      }
+      hafizayaKoyVeYenile(dosya); return true;
+    }
+    if (yerelKz > (dosya.kz || 0)) simdiYaz();
+    return false;
+  }
+
+  function baslat() {
+    if (!destekli()) { durum = "desteksiz"; return Promise.resolve(); }
+    return dbAl().then(function (h) {
+      if (!h) { durum = "yok"; setTimeout(function () { soruGoster(); }, 900); return; }
+      dizin = h;
+      return izinVar(h, false).then(function (var_) {
+        if (!var_) { durum = "izin"; setTimeout(function () { izinGoster(); }, 600); return; }
+        durum = "acik";
+        return dosyaOku(h).then(function (d) { karsilastir(d, true); })
+          .catch(function (er) { durum = "hata"; hata = "veriler.json okunamadı: " + ((er && er.message) || ""); });
+      });
+    }).catch(function () {}).then(function () { arayuz(); });
+  }
+
+  /* ---------- kullanıcı işlemleri ---------- */
+  function izinVer() {
+    if (!dizin) return klasorSec();
+    return izinVar(dizin, true).then(function (ok) {
+      if (!ok) { bildir("İzin verilmedi. Kayıtlar şimdilik yalnızca tarayıcıda tutuluyor."); arayuz(); return; }
+      durum = "acik"; hata = ""; pencereKapat();
+      return dosyaOku(dizin).then(function (d) {
+        if (karsilastir(d, false)) return;
+        if (bekleyen) simdiYaz();
+        bildir("Kayıt klasörü bağlandı: " + dizin.name);
+      }).catch(function (er) { durum = "hata"; hata = "veriler.json okunamadı: " + ((er && er.message) || ""); });
+    }).then(function () { if (typeof durumYaz === "function") durumYaz(); arayuz(); });
+  }
+
+  function klasorSec() {
+    if (!destekli()) return Promise.resolve();
+    var h;
+    return window.showDirectoryPicker({ id: "macarzeka-kayit", mode: "readwrite", startIn: "documents" }).then(function (x) {
+      h = x;
+      return izinVar(h, true);
+    }).then(function (ok) {
+      if (!ok) { bildir("Klasöre yazma izni verilmedi."); return; }
+      return dosyaOku(h).catch(function () { return "bozuk"; }).then(function (d) {
+        var yerelVar = veri && veri.musteriler && veri.musteriler.length > 0;
+        if (d === "bozuk") {
+          if (!confirm("Seçtiğin klasördeki veriler.json okunamadı.\n\nÜstüne bu bilgisayardaki kayıtlar yazılsın mı? (Eski dosya yedekler klasörüne taşınmaz, silinir.)")) return;
+          d = null;
+        }
+        if (d && d.musteriler.length && yerelVar && JSON.stringify(d.musteriler) !== JSON.stringify(veri.musteriler)) {
+          return secimGoster(h, d);
+        }
+        return baglan(h, d && !yerelVar ? d : null);
+      });
+    }).catch(function (er) { if (er && er.name === "AbortError") return; bildir("Klasör seçilemedi: " + ((er && er.message) || "")); });
+  }
+  // h klasörünü kullanmaya başla; yukle verilirse o veri yüklenir (sayfa yenilenir)
+  function baglan(h, yukle) {
+    return dbKoy(h).then(function () {
+      dizin = h; durum = "acik"; hata = ""; yedekGunu = "";
+      pencereKapat();
+      if (yukle) { hafizayaKoyVeYenile(yukle); return; }
+      if (veri) veri.kz = Date.now();
+      return simdiYaz().then(function () {
+        bildir("Kayıtlar artık “" + h.name + "” klasörüne kaydediliyor");
+        if (typeof gorunum !== "undefined" && gorunum.ad === "ayarlar" && typeof ciz === "function") ciz();
+      });
+    });
+  }
+
+  /* ---------- pencereler ---------- */
+  var secimBekleyen = null;
+  function perde(html) {
+    var p = document.getElementById("klsPerde");
+    if (!p) {
+      p = document.createElement("div"); p.id = "klsPerde"; p.className = "esl-perde";
+      p.setAttribute("role", "dialog"); p.setAttribute("aria-modal", "true");
+      document.body.appendChild(p);
+    }
+    p.innerHTML = '<div class="esl-pencere">' + html + '</div>';
+  }
+  function pencereKapat() { var p = document.getElementById("klsPerde"); if (p) p.remove(); secimBekleyen = null; }
+  var SVG_KLASOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z"/></svg>';
+  function ust(b, a) {
+    return '<button class="esl-kapat" data-kls="kapat" aria-label="Kapat">' + ik("i-carpi") + '</button>' +
+      '<div class="esl-ust"><div class="esl-logo">' + SVG_KLASOR + '</div><div><h2>' + b + '</h2>' + (a ? '<p>' + a + '</p>' : '') + '</div></div>';
+  }
+  function soruGoster() {
+    if (durum !== "yok") return;
+    try { if (localStorage.getItem("macarzeka_klasor_sonra") === gun()) return; } catch (er) {}
+    perde(ust("Kayıtlar bir klasöre kaydedilsin", "Bir kere klasör seç; her değişiklik o klasördeki dosyaya otomatik yazılsın.") +
+      '<ol class="esl-adim">' +
+        '<li><b>1</b><span>Aşağıdaki <strong>Klasör seç</strong>’e bas</span></li>' +
+        '<li><b>2</b><span>Belgeler içinde <strong>Yeni klasör</strong> aç, adını <strong>MacarZeka Kayıtlar</strong> koy ve seç</span></li>' +
+        '<li><b>3</b><span>Edge izin sorarsa <strong>Düzenlemeye izin ver</strong> de</span></li>' +
+      '</ol>' +
+      '<div class="esl-not">' + ik("i-bilgi") + '<span>Klasörde her zaman <b>veriler.json</b> (son hâl) ve <b>yedekler</b> klasörü (her güne bir kopya, son 60 gün) durur. Tarayıcı verisi silinse bile kayıtlar kaybolmaz.</span></div>' +
+      '<div class="esl-alt"><button class="btn btn2" data-kls="sonra">Sonra</button><button class="btn" data-kls="sec">' + ik("i-klasor") + 'Klasör seç</button></div>');
+  }
+  function izinGoster() {
+    if (durum !== "izin" || !dizin) return;
+    perde(ust("Kayıt klasörüne erişim", "“" + e(dizin.name) + "” klasörüne kaydetmeye devam etmek için izin gerekiyor.") +
+      '<div class="esl-not">' + ik("i-bilgi") + '<span>Edge sorunca <b>“Her ziyarette izin ver”</b> seçeneğini seçersen bir daha sormaz.</span></div>' +
+      '<div class="esl-alt"><button class="btn btn2" data-kls="kapat">Şimdi değil</button><button class="btn" data-kls="izin">' + ik("i-onay") + 'İzin ver</button></div>');
+  }
+  function secimGoster(h, d) {
+    secimBekleyen = { h: h, d: d };
+    perde(ust("Klasörde kayıt var", "“" + e(h.name) + "” klasöründe daha önce kaydedilmiş bir defter bulundu.") +
+      '<div class="esl-sayilar" style="grid-template-columns:1fr 1fr">' +
+        '<div><b>' + d.musteriler.length + '</b><small>klasördeki müşteri · ' + e(tarihYaz(d.kz)) + '</small></div>' +
+        '<div><b>' + veri.musteriler.length + '</b><small>bu bilgisayardaki müşteri</small></div>' +
+      '</div>' +
+      '<div class="esl-radyo" style="margin-top:12px">' +
+        '<label><input type="radio" name="klsSecim" value="dosya" checked><span><b>Klasördekini yükle</b><small>Bu bilgisayardaki kayıtların yerine klasördeki defter gelir.</small></span></label>' +
+        '<label><input type="radio" name="klsSecim" value="yerel"><span><b>Bu bilgisayardakini klasöre yaz</b><small>Klasördeki eski dosyanın üstüne yazılır (önce yedekler klasörüne kopyalanır).</small></span></label>' +
+      '</div>' +
+      '<div class="esl-alt"><button class="btn btn2" data-kls="kapat">Vazgeç</button><button class="btn" data-kls="secimTamam">Devam</button></div>');
+  }
+
+  document.addEventListener("click", function (ev) {
+    var t = ev.target.closest ? ev.target.closest("[data-kls]") : null;
+    if (!t) return;
+    var a = t.dataset.kls;
+    if (a === "kapat") pencereKapat();
+    else if (a === "sonra") { try { localStorage.setItem("macarzeka_klasor_sonra", gun()); } catch (er) {} pencereKapat(); }
+    else if (a === "sec") klasorSec();
+    else if (a === "izin") izinVer();
+    else if (a === "secimTamam" && secimBekleyen) {
+      var s = secimBekleyen, m = document.querySelector('input[name="klsSecim"]:checked');
+      if (m && m.value === "dosya") baglan(s.h, s.d);
+      else {
+        // eski dosyayı yedekle, sonra üstüne yaz
+        s.h.getDirectoryHandle(YEDEK_DIZIN, { create: true })
+          .then(function (y) { return dosyaYaz(y, "veriler-degistirilmeden-once-" + Date.now() + ".json", JSON.stringify(s.d)); })
+          .catch(function () {}).then(function () { baglan(s.h, null); });
+      }
+    }
+  });
+
+  /* ---------- görünüm ---------- */
+  function durumHTML() {
+    if (durum === "acik") {
+      if (hata) return '<b style="color:var(--red)">' + ik("i-uyari") + 'KLASÖRE YAZILAMADI</b><br>' + e(hata);
+      return ik("i-onay") + (sonYazma ? 'Kaydedildi <b style="color:var(--ink)">' + e(sonYazma) + '</b>' : 'Klasöre kaydediliyor') +
+        '<br><span style="font-size:11px">' + ik("i-klasor") + e(dizin ? dizin.name : "") + '</span>';
+    }
+    if (durum === "izin") return '<b style="color:var(--red);cursor:pointer" data-kls="izin">' + ik("i-uyari") + 'Klasör izni gerekiyor</b><br><span style="cursor:pointer;text-decoration:underline" data-kls="izin">İzin ver</span> · şimdilik tarayıcıda tutuluyor';
+    if (durum === "hata") return '<b style="color:var(--red)">' + ik("i-uyari") + 'KLASÖRE YAZILAMADI</b><br>' + e(hata) + '<br><span style="cursor:pointer;text-decoration:underline" data-kls="sec">Klasörü yeniden seç</span>';
+    if (durum === "yok") return ik("i-onay") + 'Tarayıcıda kaydediliyor<br><span style="cursor:pointer;text-decoration:underline" data-kls="sec">Klasöre kaydet</span>';
+    return null;
+  }
+  function ayarHTML() {
+    if (!destekli()) return null;
+    if (durum === "acik" && dizin) {
+      return '<div style="font-size:13px;color:var(--muted);margin-bottom:6px">Kayıt klasörü</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;margin-bottom:8px">' + ik("i-klasor") + e(dizin.name) + '</div>' +
+        '<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:14px">Her değişiklikte <b>veriler.json</b> güncellenir. Her gün <b>yedekler</b> klasörüne bir kopya alınır (son 60 gün).' +
+        (sonYazma ? ' Son kayıt: <b>' + e(sonYazma) + '</b>.' : '') + '</div>' +
+        '<button class="btn btn2" style="width:100%;margin-bottom:9px" data-kls="sec">' + ik("i-klasor") + 'Klasörü değiştir</button>';
+    }
+    if (durum === "izin") {
+      return '<div class="uyari" style="margin-bottom:12px">“' + e(dizin ? dizin.name : "") + '” klasörüne yazmak için izin gerekiyor. Şimdilik kayıtlar tarayıcıda tutuluyor.</div>' +
+        '<button class="btn" style="width:100%;margin-bottom:9px" data-kls="izin">' + ik("i-onay") + 'İzin ver</button>';
+    }
+    return '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px">Kayıtlar şu an yalnızca tarayıcıda duruyor. Bir klasör seç; her değişiklik bilgisayardaki dosyaya da yazılsın.</div>' +
+      '<button class="btn" style="width:100%;margin-bottom:9px" data-kls="sec">' + ik("i-klasor") + 'Kayıt klasörü seç</button>';
+  }
+  function arayuz() {
+    if (typeof durumYaz === "function") durumYaz();
+    var k = document.getElementById("klsAyar");
+    if (k) { var h = ayarHTML(); if (h) k.innerHTML = h; }
+  }
+
+  window.KlasorKayit = {
+    destekli: destekli, baslat: baslat, yaz: yaz, damgala: damgala,
+    durumHTML: durumHTML, ayarHTML: ayarHTML, sec: klasorSec,
+    _durum: function () { return { durum: durum, dizin: dizin, hata: hata, sonYazma: sonYazma, bekleyen: bekleyen }; },
+    _bekle: function () { clearTimeout(zamanlayici); return simdiYaz(); }
+  };
+})();
+</script>
+<!-- KLASOR-BITIS -->
 <script>
 "use strict";
 /* ============================================================
@@ -2270,7 +2608,8 @@ function durumYaz(){
     else if(sonKayit) d.innerHTML='<svg class="ik" aria-hidden="true"><use href="#i-onay"/></svg>Kaydedildi <b style="color:var(--ink)">'+esc(sonKayit)+'</b><br><span style="font-size:11px">'+esc(bilgi.dosya||"")+'</span>';
     else d.innerHTML='Veriler şuraya kaydediliyor:<br><span style="font-size:11px;color:#fff">'+esc(bilgi.dosya||"veriler.json")+'</span>';
   } else {
-    d.innerHTML='<svg class="ik" aria-hidden="true"><use href="#i-onay"/></svg>Otomatik kaydediliyor';
+    var kh = window.KlasorKayit && KlasorKayit.destekli() ? KlasorKayit.durumHTML() : null;
+    d.innerHTML = kh || '<svg class="ik" aria-hidden="true"><use href="#i-onay"/></svg>Otomatik kaydediliyor';
   }
 }
 function hafizayaYaz(){ try{ localStorage.setItem(ANAHTAR, JSON.stringify(veri)); }catch(e){} }
@@ -2282,7 +2621,12 @@ function hafizadanOku(){
 }
 function kaydet(){
   if(window.Esitleme) Esitleme.yerelKayit();   // eşleşik bilgisayarlara değişikliği gönder
-  if(!MASAUSTU){ hafizayaYaz(); kirli=true; durumYaz(); return; }
+  if(!MASAUSTU){
+    if(window.KlasorKayit) KlasorKayit.damgala();
+    hafizayaYaz(); kirli=true;
+    if(window.KlasorKayit) KlasorKayit.yaz();   // seçilen klasördeki veriler.json'a da yaz
+    durumYaz(); return;
+  }
   if(yazmaBekle) clearTimeout(yazmaBekle);
   yazmaBekle=setTimeout(function(){
     window.macar.yaz(veri).then(function(r){
@@ -3508,7 +3852,7 @@ function ayarlarHTML(){
         ? '<div style="font-size:13px;color:var(--muted);margin-bottom:6px">Kayıt dosyası</div>'+
           '<div style="font-size:13px;word-break:break-all;margin-bottom:16px">'+esc(bilgi.dosya||"—")+'</div>'+
           '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarKlasor">Veri klasörünü aç</button>'
-        : '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px">Kayıtlar bu tarayıcıda duruyor. Ayda bir yedek alıp flaşa ya da telefona at.</div>')+
+        : '<div id="klsAyar">'+((window.KlasorKayit && KlasorKayit.ayarHTML()) || '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px">Kayıtlar bu tarayıcıda duruyor. Ayda bir yedek alıp flaşa ya da telefona at.</div>')+'</div>')+
       '<button class="btn btn2" style="width:100%;margin-bottom:9px" id="ayarYedek"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Yedek al</button>'+
       '<button class="btn btn2" style="width:100%" id="ayarYedekYukle"><svg class="ik" aria-hidden="true"><use href="#i-yukle"/></svg>Yedekten geri yükle</button>'+
     '</div></div>'+
@@ -3938,11 +4282,16 @@ function basla(){
     // Tarayıcıda klasör diye bir şey yok; o düğmeyi hiç gösterme.
     var kd=document.getElementById("klasorAc");
     if(kd) kd.style.display="none";
-    hafizadanOku(); if(window.Esitleme) Esitleme.baslat(); durumYaz(); ciz(); abonelikKur();
-    // Gemini/mikrofon ayarlarını da oku (tarayıcıda saklanıyor), sonra ekranı tazele.
-    ayarlariGetir().then(function(){
-      ciz();
-      if(sesDestekli()) mikrofonlariGetir(false).then(function(){ if(gorunum.ad==="ayarlar") ciz(); }).catch(function(){});
+    hafizadanOku();
+    // Klasör seçildiyse önce oradaki veriler.json okunur (hangisi yeniyse o kullanılır).
+    var klasorHazir = window.KlasorKayit ? KlasorKayit.baslat() : Promise.resolve();
+    klasorHazir.catch(function(){}).then(function(){
+      if(window.Esitleme) Esitleme.baslat(); durumYaz(); ciz(); abonelikKur();
+      // Gemini/mikrofon ayarlarını da oku (tarayıcıda saklanıyor), sonra ekranı tazele.
+      ayarlariGetir().then(function(){
+        ciz();
+        if(sesDestekli()) mikrofonlariGetir(false).then(function(){ if(gorunum.ad==="ayarlar") ciz(); }).catch(function(){});
+      });
     });
   }
 }
