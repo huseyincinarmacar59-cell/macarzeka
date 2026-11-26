@@ -35,3 +35,8 @@ test-ikililer/
 
 # abonelik paneli ikonları
 !yonetim/*.png
+
+# eşleştirme testi
+testler/esitleme/site/
+testler/esitleme/node_modules/
+testler/esitleme/package*.json

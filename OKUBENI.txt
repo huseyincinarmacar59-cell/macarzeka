@@ -195,6 +195,37 @@ Ahmet'i eklerken hesap sahibi olarak Mehmet Yılmaz'ı seçin.
 İki kayıt birbirine bağlanır ve her iki kartta da görünür.
 
 
+7.1) İKİ BİLGİSAYARI EŞLEŞTİRME (dükkânda iki bilgisayar varsa)
+-----------------------------------------------------------------
+İki bilgisayar aynı müşteri defterini kullanır: birinde yapılan
+her değişiklik birkaç saniye içinde diğerinde de görünür.
+
+Eşleştirme (bir kere yapılır):
+  1. Birinci bilgisayarda:  Ayarlar -> Bilgisayar eşleştirme ->
+     "Eşleştir" -> "Kod oluştur". Ekranda 6 haneli kod çıkar.
+  2. İkinci bilgisayarda:   Ayarlar -> Bilgisayar eşleştirme ->
+     "Eşleştir" -> "Kod gir". Kodu yaz, "Eşleştir"e bas.
+  3. Birinci bilgisayarda "Onayla ve eşleştir"e bas.
+  Kayıtlar birleşir, hiçbiri silinmez. (İstersen ikinci bilgisayarda
+  "Diğer bilgisayardakini al" seçeneğiyle onun defterini sıfırlayıp
+  birinciyi alabilirsin.)
+
+Bilmen gerekenler:
+  * Kayıtlar hiçbir sunucuda tutulmaz; bilgisayardan bilgisayara
+    doğrudan ve şifreli gider. İnternet, bilgisayarların birbirini
+    bulması için gereklidir.
+  * Bir bilgisayar kapalıyken yapılan değişiklikler, o bilgisayar
+    açılıp bağlandığında kendiliğinden aktarılır.
+  * Aynı kayıt iki bilgisayarda da değiştirilirse en son yapılan
+    değişiklik geçerli olur. Farklı kayıtlar birbirini hiç ezmez.
+  * Sol alttaki yeşil nokta "Eşitlendi" demektir. Sarı: bağlanıyor.
+    Gri: diğer bilgisayar kapalı. Kırmızı: internet yok.
+  * Kayıt girerken diğer bilgisayardan değişiklik gelirse yazdığın
+    form bozulmaz; ekran işin bitince tazelenir.
+  * Eşleşmeyi kaldırmak için: Ayarlar -> Bilgisayar eşleştirme ->
+    "Eşleşmeyi yönet" -> "Eşleşmeyi kaldır". Kayıtlar yerinde kalır.
+
+
 8) SORUN ÇIKARSA
 ----------------
 - Sol altta kırmızı "KAYDEDİLEMEDİ" uyarısı görürseniz hemen

@@ -27,6 +27,7 @@ Ziraat mühendisleri için müşteri, satış, ödeme ve borç takip programı.
 - **Hesap bağlantısı** — bir kişinin hesabı başkasının üstüne yazılıysa iki kayıt birbirine bağlanır
 - **Soru Sor** — "Ahmet Yılmaz borcunu ödedi mi?" gibi normal cümlelerle sorgulama
 - **Sesli kayıt** — müşteriyi konuşarak anlat, program formu doldursun *(Windows)*
+- **Bilgisayar eşleştirme** — dükkândaki iki bilgisayar 6 haneli kodla eşleşir; birinde yapılan değişiklik saniyeler içinde diğerine geçer. Sunucu yok: bilgisayarlar WebRTC ile doğrudan, şifreli bağlanır (tanışma için PeerJS kullanılır, kayıtlar oradan geçmez). Biri kapalıyken yapılanlar açılınca aktarılır; aynı kayıtta en son değişiklik kazanır
 - **Otomatik güncelleme** — yeni sürüm çıkınca program haber verir ve kurar *(Windows)*
 
 ## Yeni sürüm çıkarma
@@ -108,6 +109,12 @@ xvfb-run -a electron testler/test-ses.js         # sesli kayıt, mikrofon
 xvfb-run -a electron testler/test-tarayici.js    # pencere/kapanma davranışı
 xvfb-run -a electron testler/test-guncelleme.js  # otomatik güncelleme
 xvfb-run -a electron testler/test-web.js         # tarayıcı sürümü
+```
+
+Bilgisayar eşleştirme testi (iki ayrı tarayıcı, sahte tanışma sunucusu; Playwright + Chrome gerekir):
+
+```bash
+cd testler/esitleme && npm i ws@8 && ./calistir.sh
 ```
 
 Her test sonucu `*-sonuc.txt` dosyasına yazar.
