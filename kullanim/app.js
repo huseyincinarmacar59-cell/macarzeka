@@ -1,7 +1,7 @@
 /* Macar Talimat — ilaç kullanım talimatı programı */
 "use strict";
 
-const SURUM = "1.9.0";
+const SURUM = "1.10.0";
 const ANAHTAR = "macar-talimat-v1";
 const ESKI_ANAHTAR = ["macar", "rec" + "ete-v1"].join("-"); // eski sürümden veri taşıma
 
@@ -49,7 +49,8 @@ function yukle() {
         kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(),
         ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}),
         sonYedek: v.sonYedek || null,
-        kz: v.kz || 0
+        kz: v.kz || 0,
+        kilit: v.kilit || null
       };
     }
   } catch (e) { console.error("Veri okunamadı", e); }
@@ -525,7 +526,8 @@ $("#yedekYukle").addEventListener("change", async (e) => {
     const liste = eskiListe(v);
     if (!Array.isArray(v.ilaclar) || !liste) throw new Error("biçim");
     if (!confirm(`Yedekte ${v.ilaclar.length} ilaç ve ${liste.length} talimat var.\nŞu anki bilgiler bunlarla DEĞİŞTİRİLSİN mi?`)) return;
-    veri = { ilaclar: v.ilaclar, talimatlar: liste, kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(), ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}), sonYedek: v.sonYedek || null };
+    const kilit = veri.kilit || null;   // şifre bu bilgisayara ait; yedek yüklemek onu değiştirmesin
+    veri = { ilaclar: v.ilaclar, talimatlar: liste, kategoriler: Array.isArray(v.kategoriler) ? v.kategoriler : varsayilanKategoriler(), ayar: Object.assign({}, VARSAYILAN_AYAR, v.ayar || {}), sonYedek: v.sonYedek || null, kilit };
     kaydet(); ayarDoldur(); turlar = yeniTurlar(); aktif = 0;
     bildir("Yedek yüklendi", "tamam");
   } catch (err) {

@@ -226,6 +226,19 @@ Bilmen gerekenler:
     "Eşleşmeyi yönet" -> "Eşleşmeyi kaldır". Kayıtlar yerinde kalır.
 
 
+7.2) ŞİFRE
+----------
+Ayarlar -> Şifre -> "Şifre koy". PIN (4-8 rakam) ya da şifre seçilir.
+  * Program her açılışta şifre sorar; kayıtlar şifre girilmeden görünmez.
+  * "Dokunulmazsa kilitlensin" süresi dolunca program kendini kilitler.
+    Sol alttaki "Kilitle" ile hemen kilitlenebilir.
+  * 5 yanlış denemeden sonra bekleme süresi başlar.
+  * Şifreyi unutursanız: şifre ekranında "Şifremi unuttum" -> çıkan kodu
+    (ör. MZ-482) programı kuran kişiye gönderin, verdiği açma kodunu girin.
+    Kayıtlar silinmez, sadece şifre sıfırlanır.
+  * Şifre her bilgisayarda ayrıdır; eşleştirme ile diğerine geçmez.
+
+
 8) SORUN ÇIKARSA
 ----------------
 - Sol altta kırmızı "KAYDEDİLEMEDİ" uyarısı görürseniz hemen

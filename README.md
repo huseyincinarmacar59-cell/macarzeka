@@ -30,6 +30,7 @@ Ziraat mühendisleri için müşteri, satış, ödeme ve borç takip programı.
 - **Soru Sor** — "Ahmet Yılmaz borcunu ödedi mi?" gibi normal cümlelerle sorgulama
 - **Sesli kayıt** — müşteriyi konuşarak anlat, program formu doldursun *(Windows)*
 - **Bilgisayar eşleştirme** — dükkândaki iki bilgisayar 6 haneli kodla eşleşir; birinde yapılan değişiklik saniyeler içinde diğerine geçer. Sunucu yok: bilgisayarlar WebRTC ile doğrudan, şifreli bağlanır (tanışma için PeerJS kullanılır, kayıtlar oradan geçmez). Biri kapalıyken yapılanlar açılınca aktarılır; aynı kayıtta en son değişiklik kazanır
+- **Şifre** — açılışta ve uzun süre dokunulmayınca şifre/PIN sorar; unutulursa yönetim panelindeki "Şifre açma kodu" ile sıfırlanır (kayıtlar silinmez)
 - **Otomatik güncelleme** — yeni sürüm çıkınca program haber verir ve kurar *(Windows)*
 
 ## Yeni sürüm çıkarma

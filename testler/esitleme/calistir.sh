@@ -15,3 +15,4 @@ trap 'kill $R $H 2>/dev/null; rm -rf site' EXIT
 sleep 1
 python3 test_esitleme.py
 python3 test_klasor.py
+python3 test_kilit.py mz

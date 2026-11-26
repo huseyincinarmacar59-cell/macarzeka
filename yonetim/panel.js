@@ -296,6 +296,12 @@
       '<div class="ayar-satir"><div><b>Yedekten yükle</b><span>Şu anki kayıtların yerine geçer</span></div><button id="yedekYukle" class="btn btn-ikinci btn-kucuk">Dosya seç</button></div>' +
       '<input type="file" id="yedekDosya" accept=".json,application/json" class="gizli"></div></div>';
 
+    h += '<div class="kart"><div class="kart-bas"><h3>Şifre açma kodu</h3></div><div class="kart-ic">' +
+      '<p class="soluk" style="margin-top:0;font-size:14px">Müşteri programın şifresini unuttuysa şifre ekranında <b>Şifremi unuttum</b>’a basar ve bir kod görür (ör. <b>MZ-482</b>). O kodu buraya yaz, çıkan açma kodunu ona ver. Kayıtları silinmez, sadece şifre sıfırlanır.</p>' +
+      '<label class="alan"><span>Programda görünen kod</span><input id="kilitKod" placeholder="MZ-482" autocomplete="off" style="text-transform:uppercase"></label>' +
+      '<button id="kilitUret" class="btn btn-ana">Açma kodu üret</button>' +
+      '<div id="kilitSonuc" style="margin-top:12px"></div></div></div>';
+
     h += '<div class="kart"><div class="kart-bas"><h3>Panel şifresi</h3></div><div class="kart-ic">' +
       '<label class="alan"><span>Yeni şifre</span><input id="yeniSifre1" type="password" autocomplete="new-password" placeholder="En az 8 karakter"></label>' +
       '<label class="alan"><span>Yeni şifre (tekrar)</span><input id="yeniSifre2" type="password" autocomplete="new-password"></label>' +
@@ -321,6 +327,18 @@
     $("#yedekYukle").onclick = function () { $("#yedekDosya").click(); };
     $("#yedekDosya").onchange = function () { if (this.files[0]) yedekOku(this.files[0]); this.value = ""; };
     $("#cikis2").onclick = cikis;
+    function kilitKoduUret() {
+      var g = String($("#kilitKod").value || "").toUpperCase().replace(/\s+/g, "");
+      var m = g.match(/^([A-Z]{2})-?(\d{3,})$/);
+      var kutu = $("#kilitSonuc");
+      if (!m || !UYG[m[1]]) { kutu.innerHTML = '<div class="uyari-kutu">Kodu programda göründüğü gibi yaz: ' + Object.keys(UYG).map(function (u) { return "<b>" + u + "-123</b>"; }).join(", ") + '</div>'; return; }
+      if (!gizli(m[1])) { kutu.innerHTML = '<div class="uyari-kutu">' + esc(UYG[m[1]].ad) + ' için anahtar kasada yok.</div>'; return; }
+      var kod = C.kodUret(gizli(m[1]), m[1], m[2], "KILIT");
+      kutu.innerHTML = '<div class="ayar-satir"><div><b>' + esc(UYG[m[1]].ad) + ' açma kodu</b><span style="font-size:22px;font-weight:800;letter-spacing:1px;color:#0f172a">' + esc(kod) + '</span></div><button class="btn btn-ikinci btn-kucuk" id="kilitKopya">Kopyala</button></div>';
+      $("#kilitKopya").onclick = function () { kopyala(kod); };
+    }
+    $("#kilitUret").onclick = kilitKoduUret;
+    $("#kilitKod").onkeydown = function (e) { if (e.key === "Enter") kilitKoduUret(); };
     $("#sifreDegis").onclick = function () {
       var a = $("#yeniSifre1").value, b = $("#yeniSifre2").value;
       if (a.length < 8) { toast("Şifre en az 8 karakter olsun"); return; }

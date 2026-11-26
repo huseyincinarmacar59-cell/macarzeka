@@ -424,6 +424,7 @@
     <button class="sekme" data-sekme="gecmis"><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg><span>Geçmiş</span></button>
     <button class="sekme" data-sekme="ayarlar"><svg class="ik" aria-hidden="true"><use href="#i-ayar"/></svg><span>Ayarlar</span></button>
   </nav>
+  <button id="kltHizli" class="kls-cip" data-klt="simdi" type="button" title="Programı kilitle" hidden><svg class="ik" aria-hidden="true"><use href="#i-kilit"/></svg><span>Kilitle</span></button>
   <button id="klsCip" class="kls-cip gizli" data-kls="cip" type="button"></button>
   <button id="kurBtn" class="btn ince gizli"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg>Uygulama olarak yükle</button>
 </header>
@@ -533,6 +534,11 @@
     </div>
 
     <div class="kart">
+      <h2><svg class="ik" aria-hidden="true"><use href="#i-kilit"/></svg>Şifre</h2>
+      <div id="kltAyar"></div>
+    </div>
+
+    <div class="kart">
       <h2><svg class="ik" aria-hidden="true"><use href="#i-klasor"/></svg>Kayıt klasörü</h2>
       <div id="klsAyar"><p class="aciklama">Yükleniyor…</p></div>
     </div>
@@ -596,6 +602,15 @@
 <div id="bildirim" class="bildirim no-print"></div>
 
 <script src="app.js"></script>
+<script src="kilit.js"></script>
+<script>
+  // Şifre: varsa kayıtlar görünmeden kilit ekranı gelir
+  Kilit.kur({ uyg: "MT", ad: "Macar Talimat", logo: "icons/icon-192.png", bildir: function (m) { bildir(m, "tamam"); },
+    btnAna: "btn ana", btnIkinci: "btn ikincil", btnTehlike: "btn tehlike",
+    oku: function () { return veri.kilit || null; },
+    yaz: function (v) { veri.kilit = v || null; kaydet(); } });
+  Kilit.baslat();
+</script>
 <script src="klasor.js"></script>
 </body>
 </html>

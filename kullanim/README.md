@@ -26,3 +26,9 @@ Klasör seçilmezse bilgiler yalnızca tarayıcıda durur; o zaman **Ayarlar →
 ## Geliştirici notu
 
 Yeni sürüm yayınlarken `sw.js` ve `app.js` içindeki `SURUM` değerlerini artırın; yoksa kurulu programlar güncellemeyi almaz.
+
+## Şifre
+
+**Ayarlar → Şifre → Şifre koy.** Program her açılışta ve seçilen süre dokunulmayınca şifre/PIN sorar.
+Unutulursa şifre ekranında **Şifremi unuttum** → çıkan kodu (ör. MT-482) programı kurana gönderin;
+yönetim panelindeki **Şifre açma kodu** bölümünden üretilen kodu girin. Kayıtlar silinmez.
